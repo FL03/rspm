@@ -3,7 +3,7 @@
 use super::*;
 
 impl StateCell {
-    pub(in crate::clob::authenticated_ws) async fn reserve_raw_frame_capacity(
+    pub(in crate::auth::ws) async fn reserve_raw_frame_capacity(
         &self,
     ) -> Option<OwnedSemaphorePermit> {
         Arc::clone(&self.raw_frame_capacity)
@@ -12,7 +12,7 @@ impl StateCell {
             .ok()
     }
 
-    pub(in crate::clob::authenticated_ws) fn reserve_raw_frame_sequence(&self) -> Option<u64> {
+    pub(in crate::auth::ws) fn reserve_raw_frame_sequence(&self) -> Option<u64> {
         let mut sequence = None;
         let updated = self.update(|state| {
             let Some(next) = state.raw_frame_sequence.checked_add(1) else {
@@ -25,7 +25,7 @@ impl StateCell {
         updated.then_some(sequence).flatten()
     }
 
-    pub(in crate::clob::authenticated_ws) fn retain_raw_frame(
+    pub(in crate::auth::ws) fn retain_raw_frame(
         &self,
         evidence: AuthenticatedUserRawFrame,
         capacity: OwnedSemaphorePermit,
@@ -68,7 +68,7 @@ impl StateCell {
         inserted
     }
 
-    pub(in crate::clob::authenticated_ws) fn pending_raw_frames(
+    pub(in crate::auth::ws) fn pending_raw_frames(
         &self,
     ) -> Vec<AuthenticatedUserRawFrame> {
         let (pending, mutex_poisoned) = match self.raw_frames.lock() {
@@ -96,7 +96,7 @@ impl StateCell {
         pending
     }
 
-    pub(in crate::clob::authenticated_ws) fn acknowledge_raw_frame_durable(
+    pub(in crate::auth::ws) fn acknowledge_raw_frame_durable(
         &self,
         frame_sequence: u64,
     ) -> bool {
@@ -123,7 +123,7 @@ impl StateCell {
         removed
     }
 
-    pub(in crate::clob::authenticated_ws) fn mark_enqueued(&self, range: TransportSequenceRange) {
+    pub(in crate::auth::ws) fn mark_enqueued(&self, range: TransportSequenceRange) {
         self.update(|state| {
             if range.first != 0
                 && range.first <= range.last
@@ -137,7 +137,7 @@ impl StateCell {
         });
     }
 
-    pub(in crate::clob::authenticated_ws) fn mark_dropped(
+    pub(in crate::auth::ws) fn mark_dropped(
         &self,
         range: TransportSequenceRange,
     ) -> bool {
@@ -181,7 +181,7 @@ impl StateCell {
         retained
     }
 
-    pub(in crate::clob::authenticated_ws) fn acknowledge_durable(&self, sequence: u64) -> bool {
+    pub(in crate::auth::ws) fn acknowledge_durable(&self, sequence: u64) -> bool {
         let mut acknowledged = true;
         let snapshot = {
             let Ok(mut state) = self.lock() else {

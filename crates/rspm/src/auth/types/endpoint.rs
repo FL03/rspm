@@ -4,8 +4,6 @@
     Contrib: @FL03
 */
 
-
-
 /// Authenticated endpoint classes whose names are safe to emit in diagnostics.
 #[derive(
     Clone,

@@ -3,7 +3,7 @@
 use super::*;
 
 impl StateCell {
-    pub(in crate::clob::authenticated_ws) fn prepare_catch_up_finalization(
+    pub(in crate::auth::ws) fn prepare_catch_up_finalization(
         &self,
         token: AuthenticatedUserRecoveryToken,
         credential_authority: AuthenticatedCredentialAuthority,
@@ -94,7 +94,7 @@ impl StateCell {
         })
     }
 
-    pub(in crate::clob::authenticated_ws) fn commit_catch_up_finalization(
+    pub(in crate::auth::ws) fn commit_catch_up_finalization(
         &self,
         finalization: AuthenticatedUserCatchUpFinalization,
     ) -> bool {
@@ -140,7 +140,7 @@ impl StateCell {
     }
 
     #[cfg(test)]
-    pub(in crate::clob::authenticated_ws) fn complete_catch_up(
+    pub(in crate::auth::ws) fn complete_catch_up(
         &self,
         token: AuthenticatedUserRecoveryToken,
         transport_watermark: u64,
@@ -162,7 +162,7 @@ impl StateCell {
         .is_some_and(|finalization| self.commit_catch_up_finalization(finalization))
     }
 
-    pub(in crate::clob::authenticated_ws) fn authority_matches(
+    pub(in crate::auth::ws) fn authority_matches(
         &self,
         token: AuthenticatedUserRecoveryToken,
         credential_authority: AuthenticatedCredentialAuthority,
