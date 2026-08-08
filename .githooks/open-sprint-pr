@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+command -v gh >/dev/null 2>&1 || {
+  echo "GitHub CLI 'gh' is required." >&2
+  exit 1
+}
+
+gh auth status >/dev/null 2>&1 || {
+  echo "GitHub CLI is not authenticated. Run: gh auth login" >&2
+  exit 1
+}
+
+DEV="${1:-$(git branch --show-current)}"
+
+if [[ -z "$DEV" ]]; then
+  echo "Cannot determine the current branch." >&2
+  exit 1
+fi
+
+# Only act on sprint development branches.
+if [[ ! "$DEV" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-dev\.[0-9]+$ ]]; then
+  exit 0
+fi
+
+REMOTE="${2:-origin}"
+
+REMOTE_URL="$(git remote get-url "$REMOTE")"
+
+# Supports:
+#   git@github.com:owner/repository.git
+#   ssh://git@github.com/owner/repository.git
+#   https://github.com/owner/repository.git
+case "$REMOTE_URL" in
+  git@github.com:*)
+    REPO="${REMOTE_URL#git@github.com:}"
+    ;;
+  ssh://git@github.com/*)
+    REPO="${REMOTE_URL#ssh://git@github.com/}"
+    ;;
+  https://github.com/*)
+    REPO="${REMOTE_URL#https://github.com/}"
+    ;;
+  http://github.com/*)
+    REPO="${REMOTE_URL#http://github.com/}"
+    ;;
+  *)
+    echo "Unsupported GitHub remote URL: $REMOTE_URL" >&2
+    exit 1
+    ;;
+esac
+
+REPO="${REPO%.git}"
+OWNER="${REPO%%/*}"
+BASE="${DEV%%-dev.*}"
+
+echo "Sprint branch '$DEV' targets patch base '$BASE'."
+
+# Confirm that the pushed branch now exists remotely.
+if ! git ls-remote --exit-code --heads "$REMOTE" "$DEV" >/dev/null 2>&1; then
+  echo "Branch '$DEV' is not present on '$REMOTE'; skipping PR creation."
+  exit 0
+fi
+
+# Cheapest guard first: an open PR already exists.
+EXISTING="$(
+  gh api \
+    "repos/${REPO}/pulls?head=${OWNER}:${DEV}&base=${BASE}&state=open" \
+    --jq '.[0].number // empty'
+)"
+
+if [[ -n "$EXISTING" ]]; then
+  echo "Draft PR #$EXISTING already open ($DEV → $BASE); nothing to do."
+  exit 0
+fi
+
+# The patch base must exist remotely.
+if ! gh api "repos/${REPO}/branches/${BASE}" >/dev/null 2>&1; then
+  echo "Patch base '$BASE' is not on the remote yet; skipping."
+  exit 0
+fi
+
+set +e
+OUT="$(
+  gh api \
+    --method POST \
+    "repos/${REPO}/pulls" \
+    -f title="$DEV" \
+    -f head="$DEV" \
+    -f base="$BASE" \
+    -F draft=true \
+    -f body="Automated sprint draft PR from \`$DEV\` to \`$BASE\`." \
+    2>&1
+)"
+RC=$?
+set -e
+
+if [[ "$RC" -eq 0 ]]; then
+  URL="$(printf '%s' "$OUT" | jq -r '.html_url // empty' 2>/dev/null || true)"
+
+  if [[ -n "$URL" ]]; then
+    echo "Opened draft PR: $URL"
+  else
+    echo "Opened draft PR: $DEV → $BASE."
+  fi
+elif printf '%s' "$OUT" |
+  grep -qiE 'no commits between|has no history in common'; then
+  echo "No commits between '$BASE' and '$DEV' yet; retry after the next push."
+else
+  printf \
+    'Failed to open draft PR (%s → %s):\n%s\n' \
+    "$DEV" \
+    "$BASE" \
+    "$OUT" >&2
+  exit 1
+fi
