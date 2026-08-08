@@ -8,9 +8,17 @@
 
 _**Warning: The library is currently in the early stages of development and is not yet ready for production use.**_
 
-`rspm`
+`rspm` is a Rust native Polymarket client supporting realtime streams, secure trading, and more.
 
 ## Features
+
+To enable access to the various APIs exposed by Polymarket, toggle one or more of the following features:
+
+- [ ] `clob`: enables the CLOB api
+- [ ] `data`: enables the Polymarket data-api
+- [ ] `gamma`: enables the Polymarket Gamma API (default)
+
+### Optional Dependencies
 
 - [x] `serde` - enables serialization using [`serde`](https://serde.rs/)
 
