@@ -1,0 +1,152 @@
+[package]
+build = "build.rs"
+description = "The core modules for the rspm project."
+name = "rspm-core"
+
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lib]
+bench = false
+
+[[test]]
+name = "default"
+required-features = []
+
+[package.metadata.docs.rs]
+all-features = false
+features = ["full"]
+rustc-args = ["--cfg", "docsrs"]
+version = "v"
+
+[package.metadata.release]
+no-dev-version = true
+tag-name = "v"
+
+[dependencies]
+# error-handling
+thiserror = { workspace = true }
+# hashbrown
+hashbrown = { optional = true, workspace = true }
+# serialization
+serde = { optional = true, workspace = true }
+serde_derive = { optional = true, workspace = true }
+serde_json = { optional = true, workspace = true }
+# macros & utilities
+paste = { workspace = true }
+smart-default = { workspace = true }
+strum = { optional = true, workspace = true }
+# time
+chrono = { optional = true, workspace = true }
+time = { optional = true, workspace = true }
+# WebAssembly
+wasm-bindgen = { optional = true, workspace = true }
+wit-bindgen = { optional = true, workspace = true }
+
+[features]
+default = [
+  "std",
+]
+
+full = [
+  "default",
+  "hashbrown",
+  "json",
+  "time",
+]
+
+# ********* [FF] Flags *********
+json = [
+  "alloc",
+  "serde",
+  "serde_json",
+]
+
+time = [
+  "std",
+  "chrono",
+  "time_03",
+  "chrono?/clock",
+]
+
+# ********* [FF] Standard Library *********
+alloc = [
+  "hashbrown?/alloc",
+  "chrono?/alloc",
+  "serde?/alloc",
+  "serde_json?/alloc",
+  "wasm-bindgen?/gg-alloc",
+]
+
+std = [
+  "alloc",
+  "anyhow?/std",
+  "chrono?/std",
+  "hashbrown?/std",
+  "serde?/std",
+  "serde_json?/std",
+  "strum?/std",
+  "thiserror/std",
+  "time?/std",
+  "wasm-bindgen?/std",
+  "wit-bindgen?/std",
+]
+
+# ********* [FF] Targets *********
+nightly = [
+  "hashbrown?/nightly"
+]
+
+wasi = [
+  "alloc",
+  "witbind",
+]
+
+wasm = [
+  "alloc",
+  "wasm_bindgen",
+]
+
+# ********* [FF] Deps *********
+
+chrono = ["dep:chrono"]
+
+hashbrown = ["dep:hashbrown"]
+
+rayon = [
+  "dep:rayon",
+  "hashbrown?/rayon",
+]
+
+serde = [
+  "dep:serde",
+  "dep:serde_derive",
+  "chrono?/serde",
+  "time?/serde",
+  "wasm-bindgen?/serde",
+]
+
+serde_json = [
+  "dep:serde_json",
+  "wasm-bindgen?/serde_json",
+]
+
+time_03 = ["dep:time"]
+
+tracing = ["dep:tracing"]
+
+wasm_bindgen = [
+  "dep:wasm-bindgen",
+]
+
+witbind = [
+  "dep:wit-bindgen",
+]

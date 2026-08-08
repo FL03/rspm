@@ -1,0 +1,112 @@
+[workspace]
+default-members = [
+  "crates/sdk",
+]
+members = [
+  "crates/*",
+]
+resolver = "3"
+
+[workspace.package]
+authors = ["FL03 <joe@pzzld.org>"]
+categories = []
+description = "A client library for interacting with Polymarket."
+edition = "2024"
+homepage = "https://github.com/FL03/rspm/wiki"
+keywords = []
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/FL03/rspm.git"
+rust-version = "1.96.0"
+version = "0.0.0"
+
+[workspace.dependencies]
+
+rspm = { default-features = false, path = "crates/sdk", version = "0.0.0" }
+rspm-core = { default-features = false, path = "crates/core", version = "0.0.0" }
+# local
+# benchmarks
+criterion = { features = ["plotters"], version = "0.8" }
+# data structures
+bytes = { default-features = false, version = "1" }
+hashbrown = { default-features = false, version = "0.17" }
+# error handling
+anyhow = { default-features = false, version = "1" }
+thiserror = { default-features = false, version = "2" }
+# rand
+getrandom = { default-features = false, version = "0.4" }
+rand = { default-features = false, version = "0.10" }
+rand_distr = { default-features = false, version = "0.6" }
+uuid = { default-features = false, version = "1" }
+# time
+chrono = { default-features = false, version = "0.4" }
+time = { default-features = false, version = "0.3" }
+# macros
+lazy_static = { version = "1" }
+paste = { version = "1" }
+smart-default = { version = "0.7" }
+# serialization
+serde = { default-features = false, features = ["derive"], version = "1" }
+serde_derive = { version = "1" }
+serde_json = { default-features = false, version = "1" }
+# WebAssembly
+wasm-bindgen = { default-features = false, version = "0.2" }
+# WebAssembly System Interface
+wit-bindgen = { default-features = false, version = "0.60" }
+# tracing
+tracing = { default-features = false, features = ["attributes"], version = "0.1" }
+
+[workspace.dependencies.tracing-subscriber]
+default-features = false
+features = [
+  "env-filter",
+  "fmt",
+]
+version = "0.3"
+
+# ********* [Profiles] *********
+[profile.dev]
+codegen-units = 256
+debug = true
+debug-assertions = true
+incremental = true
+lto = false
+opt-level = 1
+overflow-checks = true
+panic = "unwind"
+rpath = false
+strip = false
+
+[profile.release]
+codegen-units = 16
+debug = false
+debug-assertions = false
+incremental = false
+lto = "fat"
+opt-level = 2
+overflow-checks = false
+panic = "unwind"
+rpath = false
+strip = true
+
+[profile.android-dev]
+inherits = "dev"
+
+[profile.server-dev]
+inherits = "dev"
+lto = "thin"
+
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+strip = true
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+strip = true
+
+[profile.docker]
+codegen-units = 4
+inherits = "release"
+lto = "thin"

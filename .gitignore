@@ -1,0 +1,182 @@
+# artifacts
+**/.artifacts/backups/
+**/.artifacts/cache/
+**/.artifacts/temp/
+**/.artifacts/**/tests/
+
+**/.shepherd/runs
+**/.shepherd/backups/
+**/.shepherd/cache/
+**/.shepherd/temp/
+**/.shepherd/**/tests/
+
+!.artifacts/.gitkeep
+!.artifacts/models/
+
+!.shepherd/.gitkeep
+!.shepherd/models/
+
+# Git worktrees (local development isolation)
+**/.worktrees/
+**/worktrees/
+
+# Claude Code — track plans/skills/settings, ignore session artifacts
+.claude/todos/
+.claude/agent-memory/
+
+**/.remember/tmp
+**/remember/tmp
+
+# Bot TOML migration backups (v0.3.1-dev.6 — bots consolidated into settings.json)
+.axiom/config/bots/*.toml.bak
+
+!**/default.config.*
+
+# ----- [PYTHON] -----
+**/.venv/
+**/__pycache__/
+
+**/venv/
+**/dist/
+*.egg-info/
+
+*.pyc
+*.pyo
+*.pyd
+
+# ----- [NODEJS] -----
+**/build/
+**/node_modules/
+
+# ----- [TYPESCRIPT] -----
+*.tsbuildinfo
+
+# ----- [ATOM] -----
+**/.atom/
+
+# ----- [IntelliJ] -----
+**/.idea/
+
+*.iml
+*.ipr
+*.iws
+
+# ----- [VSCODE] -----
+**/.vscode/mcp.json
+**/.vscode/mcp.json
+
+# ----- [WSL] -----
+
+# ----- [WSL] -----
+*:Zone.Identifier
+
+# ----- [NIX] -----
+**/.nix
+**/.nix-channels
+
+!**/flake.lock
+
+# ----- [ONNX] -----
+*.onnx.data
+
+# ----- [RUST] -----
+**/rust_out
+**/target/
+
+*.rs.bk
+
+*.rlib
+*.rlib.*
+
+!**/Cargo.lock
+
+
+# ----- [CONFIG] -----
+**/*.config.*
+
+**/settings.local.*
+
+!**/settings.default.*
+
+
+# ----- [DOTENV] -----
+*.env
+*.env.*
+
+*.local.envrc
+*.envrc.local
+
+*.secret.envrc
+*.envrc.secret
+
+!**/default.env
+
+!**/.env.default
+!**/.default.env.
+
+!**/example.env
+!**/.env.example
+!**/.example.env.
+
+*.secret
+
+# ----- [MCP] -----
+**/.mcp.json
+**/mcp.json
+
+# ----- [AXIOM] -----
+**/.axiom/.init
+**/.axiom/cache/
+**/.axiom/data/
+**/.axiom/logs/
+**/.axiom/models/
+
+!.axiom/**/.gitkeep
+!**/axiom.toml
+
+# ----- [DIRECTORIES] -----
+**/.DS_Store
+**/build/
+**/cache/
+**/deps/
+**/dist/
+**/tmp/
+**/temp/
+
+!**/src/**/build
+!**/src/**/cache
+
+
+# ----- [FILE-EXTENSIONS] -----
+*.bak
+*.bak.*
+
+*.bk
+*.bk.*
+
+*.db
+*.db.*
+
+*.db-*
+
+*.gz
+*.gz.*
+
+*.log
+*.log.*
+
+*.pem
+
+*.sqlite
+*.sqlite.*
+
+*.sqlite3
+*.sqlite3.*
+
+*.zip
+*.zip.*
+
+# ----- [SUPABASE] -----
+**/supabase/.temp/
+.worktrees
+.worktrees/

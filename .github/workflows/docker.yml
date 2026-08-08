@@ -1,0 +1,130 @@
+name: docker
+
+concurrency:
+  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+on:
+  push:
+    tags: [latest, "v[0-9]*.[0-9]*.[0-9]*"]
+  repository_dispatch:
+    types: [docker, dockerhub, docker-publish]
+  workflow_dispatch:
+    inputs:
+      runner:
+        default: self-hosted
+        description: What type of runner should the action leverage?
+        type: choice
+        options: [macos-latest, ubuntu-latest, windows-latest, self-hosted]
+      platforms:
+        default: "linux/amd64,linux/arm64/v8"
+        description: "Which platform(s) should we build for?"
+        type: string
+      tag:
+        description: "Set the version tag (overrides automatic version detection)"
+        required: false
+        default: "latest"
+        type: string
+
+jobs:
+  containers:
+    name: Build and Push Docker Image
+    runs-on: ${{ github.event.inputs.runner || 'self-hosted' }}
+    env:
+      IS_PRIVATE: ${{ github.event.repository.private }}
+      DOCKERFILE: ./.docker/${{ matrix.file }}
+      DOCKERHUB_IMAGE: docker.io/${{ vars.DOCKERHUB_USERNAME }}/${{ matrix.name }}
+      GHCR_IMAGE: ghcr.io/fl03/${{ matrix.name }}
+      IMAGE_PLATFORMS: ${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64/v8' }}
+      IMAGE_TAG: ${{ github.event.inputs.tag || 'latest' }}
+    permissions:
+      actions: read
+      attestations: write
+      contents: read
+      deployments: write
+      id-token: write
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - file: axiom.dockerfile
+            name: axiom
+          - file: mcp.dockerfile
+            name: axiom-mcp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          fetch-tags: true
+          persist-credentials: true
+          ref: ${{ github.event.client_payload.ref  || github.ref }}
+          repository: ${{ github.repository }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Docker Metadata
+        uses: docker/metadata-action@v6
+        id: meta
+        with:
+          flavor: latest=true
+          images: |
+            name=${{ env.DOCKERHUB_IMAGE }}
+            name=${{ env.GHCR_IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=sha
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v4
+        with:
+          # binfmt registration is host-global + idempotent; the 3 matrix legs
+          # share ONE self-hosted box, so the default GHA-cached binfmt image
+          # races the same reservation key ("another job may be creating this
+          # cache"). Disable that cache — registration is fast and host-wide.
+          cache-image: false
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          # Per-image PERSISTENT builder. A stable name + keep-state means the
+          # docker-container builder (and its --mount=type=cache sccache +
+          # cargo-registry mounts) survive across runs on the self-hosted host,
+          # instead of being torn down by the default post-job cleanup. Per
+          # image so the 3 concurrent matrix legs never race one builder.
+          name: axiom-builder-${{ matrix.name }}
+          keep-state: true
+      - name: Login to DockerHub
+        uses: docker/login-action@v4
+        with:
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build & Push
+        uses: docker/build-push-action@v7
+        id: build
+        with:
+          # Registry-backed cache → ghcr, one ref PER IMAGE (GHCR_IMAGE already
+          # includes matrix.name) so concurrent legs can never collide on a
+          # shared key, and there is no 10 GB GHA-cache cap / LRU eviction.
+          # image-manifest + oci-mediatypes make the cache a ghcr-compatible
+          # OCI manifest. mode=max exports intermediate (chef cook) layers too.
+          cache-from: type=registry,ref=${{ env.GHCR_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.GHCR_IMAGE }}:buildcache,mode=max,image-manifest=true,oci-mediatypes=true
+          context: .
+          file: ${{ env.DOCKERFILE }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          platforms: ${{ env.IMAGE_PLATFORMS }}
+          push: true
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+      - name: Establish Proveance
+        id: attestation
+        uses: actions/attest-build-provenance@v4
+        if: github.event.repository.public
+        with:
+          push-to-registry: true
+          subject-digest: ${{ steps.build.outputs.digest }}
+          subject-name: ${{ env.GHCR_IMAGE }}
