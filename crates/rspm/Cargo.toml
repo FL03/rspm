@@ -1,0 +1,297 @@
+[package]
+build = "build.rs"
+description = "Custom Polymarket utilities and primitives supporting integration into the axiom pipeline"
+name = "rspm"
+
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[package.metadata.docs.rs]
+all-features = false
+features = ["default"]
+rustc-args = ["--cfg", "docsrs"]
+version = "v{{version}}"
+
+[package.metadata.release]
+no-dev-version = true
+tag-name = "v{{version}}"
+
+[lib]
+bench = false
+
+[dependencies]
+# error
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+# config
+config = { optional = true, workspace = true }
+# http client
+reqwest = { optional = true, workspace = true }
+# database
+sqlx = { optional = true, workspace = true }
+# num
+num-traits = { workspace = true }
+# serialization
+schemars = { optional = true, workspace = true }
+serde = { optional = true, workspace = true }
+serde_derive = { optional = true, workspace = true }
+serde_json = { optional = true, workspace = true, features = ["raw_value"] }
+# async
+futures = { workspace = true }
+hashbrown = { workspace = true, features = ["default-hasher"] }
+tokio = { optional = true, workspace = true }
+tokio-tungstenite = { optional = true, workspace = true }
+# random
+getrandom = { optional = true, workspace = true }
+rand = { optional = true, workspace = true }
+rand_distr = { optional = true, workspace = true }
+# uuid
+uuid = { optional = true, workspace = true }
+# tracing
+tracing = { optional = true, workspace = true }
+# utilities
+strum = { workspace = true }
+# crypto
+k256 = { workspace = true }
+rust_decimal = { workspace = true }
+base64 = { optional = true, workspace = true }
+hmac = { optional = true, workspace = true }
+sha2 = { optional = true, workspace = true }
+# polymarket
+polymarket_client_sdk_v2 = { optional = true, workspace = true }
+# authenticated response decoding
+serde_path_to_error = { optional = true, workspace = true }
+# authenticated request query construction
+url = { optional = true, workspace = true }
+# wasm
+wasm-bindgen = { optional = true, workspace = true }
+
+[features]
+default = [
+  "async",
+  "clob",
+  "ecdsa",
+  "gamma",
+  "std",
+]
+
+full = [
+  "default",
+  "config",
+  "json",
+  "stream",
+  "tracing",
+  "uuid",
+  "watch",
+]
+
+# ********* [FF] Flags *********
+async = [
+  "reqwest",
+  "tokio",
+]
+
+clob = [
+  "sdk",
+  "std",
+  "async",
+  "base64",
+  "ecdsa",
+  "hmac",
+  "polymarket_client_sdk_v2?/clob",
+  "serde_path_to_error",
+  "frame-identity",
+  "url",
+]
+
+frame-identity = [
+  "alloc",
+  "sha2",
+]
+
+gamma = [
+  "std",
+  "async",
+  "json",
+]
+
+json = [
+  "alloc",
+  "schemars",
+  "serde",
+  "serde_json",
+  "reqwest?/json",
+]
+
+multi-thread = [
+  "tokio",
+  "tokio?/rt-multi-thread",
+]
+
+native = [
+  "multi-thread",
+  "tokio?/full",
+]
+
+watch = [
+  "clob",
+  "stream",
+  "ws",
+]
+
+# ********* [FF] Target *********
+nightly = []
+
+# Custom authenticated transport authorities exist only for deterministic
+# downstream tests. Production builds use the fixed Polymarket user endpoint.
+test-utils = []
+
+wasi = [
+  "default",
+]
+
+wasm = [
+  "default",
+  "wasm_bindgen",
+  "getrandom?/wasm_js",
+]
+
+# ********* [FF] Standard Library *********
+
+alloc = [
+  "rand?/alloc",
+  "rand_distr?/alloc",
+  "serde?/alloc",
+  "serde_json?/alloc",
+  "wasm-bindgen?/gg-alloc",
+]
+
+std = [
+  "anyhow/std",
+  "base64?/std",
+  "num-traits/std",
+  "rand?/default",
+  "rand_distr?/std",
+  "reqwest?/default",
+  "schemars?/std",
+  "serde?/std",
+  "serde_json?/std",
+  "strum/std",
+  "url?/std",
+  "wasm-bindgen?/std",
+]
+
+# ********* [FF] Dependencies *********
+
+base64 = ["dep:base64"]
+
+config = ["dep:config"]
+
+ecdsa = ["k256/ecdsa"]
+
+hmac = ["dep:hmac"]
+
+pem = ["k256/pem"]
+
+postgres = [
+  "sqlx",
+  "sqlx?/postgres",
+]
+
+rand = [
+  "dep:rand",
+  "dep:rand_distr",
+  "rng",
+  "uuid?/v4",
+]
+
+reqwest = [
+  "dep:reqwest",
+  "json",
+  "std",
+]
+
+rng = [
+  "dep:getrandom",
+  "getrandom?/sys_rng",
+  "rand?/sys_rng",
+]
+
+schemars = ["dep:schemars"]
+
+sdk = [
+  "dep:polymarket_client_sdk_v2",
+  "std",
+]
+
+serde = [
+  "dep:serde",
+  "dep:serde_derive",
+  "k256/serde",
+  "rust_decimal/serde",
+  "wasm-bindgen?/serde",
+]
+
+serde_json = [
+  "dep:serde_json",
+  "wasm-bindgen?/serde_json",
+]
+
+serde_path_to_error = ["dep:serde_path_to_error"]
+
+sha2 = ["dep:sha2"]
+
+sqlite = [
+  "sqlx",
+  "sqlx?/sqlite",
+]
+
+sqlx = [
+  "dep:sqlx",
+  "sqlx?/derive",
+  "sqlx?/macros",
+]
+
+stream = ["reqwest?/stream"]
+
+tokio = [
+  "dep:tokio",
+  "sqlx?/runtime-tokio",
+]
+
+tracing = [
+  "dep:tracing",
+]
+
+url = ["dep:url"]
+
+uuid = [
+  "dep:uuid",
+  "rand",
+  "sqlx?/uuid",
+]
+
+wasm_bindgen = [
+  "dep:wasm-bindgen",
+]
+
+ws = [
+  "sdk",
+  "uuid",
+  "polymarket_client_sdk_v2?/ws",
+  "dep:tokio-tungstenite",
+  "tokio?/net",
+  "tokio?/rt",
+  "tokio?/sync",
+  "tokio?/time",
+  "tokio-tungstenite?/connect",
+  "tokio-tungstenite?/rustls-tls-native-roots",
+]

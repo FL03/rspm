@@ -29,9 +29,8 @@ jobs:
       max-parallel: 1
       matrix:
         package:
-          # sdk
-          - {{ project-name }}
-          - {{ project-name }}-core
+          - rspm
+          - rspm-core
     steps:
       - name: Checkout
         uses: actions/checkout@v7

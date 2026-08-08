@@ -1,6 +1,6 @@
 [workspace]
 default-members = [
-  "crates/sdk",
+  "crates/rspm",
 ]
 members = [
   "crates/*",
@@ -23,16 +23,35 @@ version = "0.0.0"
 [workspace.dependencies]
 
 rspm = { default-features = false, path = "crates/sdk", version = "0.0.0" }
-rspm-core = { default-features = false, path = "crates/core", version = "0.0.0" }
 # local
 # benchmarks
 criterion = { features = ["plotters"], version = "0.8" }
+# config
+config = { features = [], version = "0.15" }
+# clients
+reqwest = { default-features = false, version = "0.13" }
+sqlx = { default-features = false, features = ["derive", "macros"], version = "0.9" }
+# crypto
+base64 = { version = "0.23" }
+hmac = { version = "0.13" }
+k256 = { version = "0.13" }
+rust_decimal = { version = "1" }
+sha2 = { version = "0.11" }
+# async
+futures = { default-features = false, version = "0.3" }
+tokio = { default-features = false, version = "1" }
+tokio-tungstenite = { default-features = false, version = "0.30" }
+# concurrency & parallelism
+rayon = { default-features = false, version = "1" }
 # data structures
 bytes = { default-features = false, version = "1" }
 hashbrown = { default-features = false, version = "0.17" }
+url = { default-features = false, version = "2" }
 # error handling
 anyhow = { default-features = false, version = "1" }
 thiserror = { default-features = false, version = "2" }
+# math
+num-traits = { default-features = false, version = "0.2" }
 # rand
 getrandom = { default-features = false, version = "0.4" }
 rand = { default-features = false, version = "0.10" }
@@ -41,14 +60,20 @@ uuid = { default-features = false, version = "1" }
 # time
 chrono = { default-features = false, version = "0.4" }
 time = { default-features = false, version = "0.3" }
-# macros
+# macros & utilities
 lazy_static = { version = "1" }
 paste = { version = "1" }
 smart-default = { version = "0.7" }
+strum = { default-features = false, features = ["derive"], version = "0.28" }
 # serialization
+schemars = { default-features = false, version = "1" }
 serde = { default-features = false, features = ["derive"], version = "1" }
 serde_derive = { version = "1" }
 serde_json = { default-features = false, version = "1" }
+serde_path_to_error = { version = "0.1" }
+# polymarket
+polymarket_client_sdk_v2 = { version = "0.7" }
+# data-structures
 # WebAssembly
 wasm-bindgen = { default-features = false, version = "0.2" }
 # WebAssembly System Interface
