@@ -42,7 +42,7 @@ mod utils {
     }
 }
 
-pub(crate) mod prelude {
+pub mod prelude {
     pub use super::balance::*;
     pub use super::client::*;
     pub(crate) use super::consts::*;

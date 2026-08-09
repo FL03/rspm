@@ -6,6 +6,8 @@
 #![cfg(feature = "clob")]
 #[doc(inline)]
 pub use self::prelude::*;
+#[doc(inline)]
+pub use crate::auth::prelude::*;
 
 pub mod client;
 mod consts;

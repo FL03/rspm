@@ -119,7 +119,7 @@ pub use self::utils::*;
 #[doc(inline)]
 pub use self::watch::BookWatcher;
 #[doc(inline)]
-pub use self::{auth::AuthenticatedHttpClient, consts::*, error::*, retry::*, types::*};
+pub use self::{auth::prelude::*, consts::*, error::*, retry::*, types::*};
 // prelude
 #[doc(hidden)]
 pub mod prelude {
