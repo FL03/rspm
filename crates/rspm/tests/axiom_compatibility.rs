@@ -3,6 +3,11 @@
 fn type_is_public<T>() {}
 
 #[test]
+fn venue_constraint_facade_remains_available() {
+    assert_eq!(rspm::venue::venue_min_bump(2.0, 5.0, 0.1, 0.05), Some(5.0));
+}
+
+#[test]
 fn authority_types_remain_available_at_the_crate_root() {
     type_is_public::<rspm::AuthenticatedCredentialAuthority>();
     type_is_public::<rspm::AuthenticatedCredentialIdentity>();

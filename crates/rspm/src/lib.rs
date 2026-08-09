@@ -32,6 +32,11 @@ pub mod gamma;
 pub mod retry;
 #[cfg(feature = "watch")]
 pub mod watch;
+
+/// Deterministic venue-constraint helpers retained at their downstream path.
+pub mod venue {
+    pub use crate::utils::venue_min_bump;
+}
 // modules (inline)
 mod impls {
     mod impl_market_snapshot;
