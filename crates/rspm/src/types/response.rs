@@ -6,10 +6,12 @@
 #[doc(inline)]
 pub use self::prelude::*;
 
+#[cfg(feature = "clob")]
 mod balance;
 mod version;
 
 mod prelude {
+    #[cfg(feature = "clob")]
     pub use super::balance::*;
     pub use super::version::*;
 }

@@ -52,7 +52,7 @@ where
     deserializer.deserialize_map(Visitor)
 }
 
-#[cfg(feature = "json")]
+#[cfg(all(feature = "clob", feature = "json"))]
 pub fn decode_json<T>(
     endpoint: crate::auth::AuthenticatedEndpoint,
     body: &[u8],

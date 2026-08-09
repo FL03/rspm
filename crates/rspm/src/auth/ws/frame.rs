@@ -7,10 +7,6 @@ use serde::Deserialize as _;
 use super::{
     AuthenticatedUserEvent, AuthenticatedUserWsError, MAX_FRAME_BYTES, wire::WireUserEventBatch,
 };
-use crate::{
-    AuthenticatedPrivateFrameIdentityEncodingV1, AuthenticatedPrivateFrameIdentityGapV1,
-    AuthenticatedPrivateFrameIdentityV1,
-};
 
 /// Exact wire encoding retained for one authenticated private data frame.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -100,7 +96,11 @@ impl AuthenticatedUserFrameReceipt {
     }
 }
 
-/// Exact bounded bytes retained until their durable storage is acknowledged.
+/// Exact bounded payload and transport receipt facts retained until durable
+/// storage is acknowledged.
+///
+/// Application evidence keys and payload digests are downstream policy. RSPM
+/// exposes the captured facts without composing either identity.
 #[derive(Clone, PartialEq)]
 pub struct AuthenticatedUserRawFrame {
     frame_sequence: u64,
@@ -167,53 +167,6 @@ impl AuthenticatedUserRawFrame {
     #[must_use]
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
-    }
-
-    /// Compute the canonical v1 identity from the transport-owned receipt and
-    /// bytes plus the downstream process-local owner pair.
-    #[doc(hidden)]
-    pub fn private_frame_evidence_key_v1(
-        &self,
-        owner_id: u64,
-        session_id: u64,
-    ) -> Result<String, &'static str> {
-        let process_generation = self.receipt.process_generation.to_string();
-        AuthenticatedPrivateFrameIdentityV1 {
-            owner_id,
-            session_id,
-            process_generation: &process_generation,
-            receipt_wall_time_ns: self.receipt.wall_time_ns,
-            receipt_monotonic_ns: self.receipt.monotonic_ns,
-            frame_sequence: self.frame_sequence,
-            first_transport_sequence: self.first_transport_sequence,
-            last_transport_sequence: self.last_transport_sequence,
-            socket_generation: self.socket_generation,
-            socket_gap_version: self.socket_gap_version,
-            encoding: match self.encoding {
-                AuthenticatedUserFrameEncoding::Text => {
-                    AuthenticatedPrivateFrameIdentityEncodingV1::Text
-                }
-                AuthenticatedUserFrameEncoding::Binary => {
-                    AuthenticatedPrivateFrameIdentityEncodingV1::Binary
-                }
-                AuthenticatedUserFrameEncoding::Raw => {
-                    AuthenticatedPrivateFrameIdentityEncodingV1::Raw
-                }
-            },
-            gap: self.gap.map(|gap| match gap {
-                AuthenticatedUserFrameGap::InvalidTextSchema => {
-                    AuthenticatedPrivateFrameIdentityGapV1::InvalidTextSchema
-                }
-                AuthenticatedUserFrameGap::UnsupportedBinary => {
-                    AuthenticatedPrivateFrameIdentityGapV1::UnsupportedBinary
-                }
-                AuthenticatedUserFrameGap::UnsupportedRawFrame => {
-                    AuthenticatedPrivateFrameIdentityGapV1::UnsupportedRawFrame
-                }
-            }),
-            payload: &self.bytes,
-        }
-        .evidence_key()
     }
 }
 
@@ -357,7 +310,7 @@ impl AuthenticatedUserEventBatch {
             .expect("bounded authenticated frame event count fits u64")
     }
 
-    /// Clone the exact raw evidence retained for this queued frame.
+    /// Clone the exact raw transport receipt retained for this queued frame.
     #[must_use]
     pub fn raw_evidence(&self) -> AuthenticatedUserRawFrame {
         let receipt = self

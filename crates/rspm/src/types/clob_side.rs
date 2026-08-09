@@ -221,6 +221,7 @@ mod tests {
     /// [REGRESSION][EVAL] Authenticated transport and public CLOB APIs must
     /// share one order-direction type while outcome `Side` remains a separate
     /// Yes/No axis.
+    #[cfg(feature = "clob")]
     #[test]
     fn authenticated_side_is_clob_side_and_outcome_side_stays_distinct() {
         let authenticated: crate::auth::AuthenticatedVenueSide = ClobSide::Sell;

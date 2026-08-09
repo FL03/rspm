@@ -56,6 +56,7 @@ pub enum Error {
     // external errors
     #[error(transparent)]
     AddrParseError(#[from] core::net::AddrParseError),
+    #[cfg(feature = "clob")]
     #[error(transparent)]
     AuthEndpointError(#[from] crate::auth::AuthenticatedEndpointError),
     #[error(transparent)]
@@ -69,6 +70,7 @@ pub enum Error {
     #[cfg(feature = "std")]
     #[error(transparent)]
     IoError(#[from] std::io::Error),
+    #[cfg(feature = "sdk")]
     #[error(transparent)]
     PolymarketError(#[from] polymarket::error::Error),
     #[cfg(feature = "std")]

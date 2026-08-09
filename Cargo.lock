@@ -3148,7 +3148,9 @@ dependencies = [
  "secrecy",
  "serde",
  "serde_html_form",
+ "serde_ignored",
  "serde_json",
+ "serde_path_to_error",
  "serde_repr",
  "serde_with",
  "sha1 0.10.7",
@@ -3157,6 +3159,7 @@ dependencies = [
  "tokio",
  "tokio-tungstenite 0.29.0",
  "tokio-util",
+ "tracing",
  "url",
  "uuid",
 ]
@@ -4115,6 +4118,16 @@ dependencies = [
  "itoa",
  "serde_core",
  "zmij",
+]
+
+[[package]]
+name = "serde_ignored"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "115dffd5f3853e06e746965a20dcbae6ee747ae30b543d91b0e089668bb07798"
+dependencies = [
+ "serde",
+ "serde_core",
 ]
 
 [[package]]

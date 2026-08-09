@@ -16,19 +16,26 @@ compile_error! { "Either the `std` or `alloc` feature must be enabled." }
 // external crates
 #[cfg(feature = "alloc")]
 extern crate alloc;
-extern crate polymarket_client_sdk_v2 as polymarket;
+/// Transitional exact-identity export of the upstream SDK.
+///
+/// Prefer RSPM's native modules for new code. This export exists only while
+/// downstream callers migrate away from direct SDK dependencies.
+#[cfg(feature = "sdk")]
+pub extern crate polymarket_client_sdk_v2 as polymarket;
 
 // modules (public)
+#[cfg(feature = "clob")]
 pub mod auth;
-#[cfg(feature = "frame-identity")]
-mod authenticated_frame_identity;
+#[cfg(feature = "clob")]
 pub mod clob;
 pub mod consts;
 #[cfg(all(feature = "sqlx", feature = "postgres", feature = "json"))]
 pub mod dead_letter;
 pub mod error;
 pub mod fees;
+#[cfg(feature = "gamma")]
 pub mod gamma;
+#[cfg(feature = "clob")]
 pub mod retry;
 #[cfg(feature = "watch")]
 pub mod watch;
@@ -56,12 +63,14 @@ pub mod types {
     mod fill;
     mod market;
     mod order;
+    mod order_type;
     mod position;
     mod request;
     mod resolution;
     mod response;
     mod side;
     mod tick_size;
+    #[cfg(feature = "sdk")]
     mod u256;
     mod version;
 
@@ -74,11 +83,13 @@ pub mod types {
         pub use super::fill::*;
         pub use super::market::*;
         pub use super::order::*;
+        pub use super::order_type::*;
         pub use super::position::*;
         pub use super::resolution::*;
         pub use super::response::*;
         pub use super::side::*;
         pub use super::tick_size::*;
+        #[cfg(feature = "sdk")]
         pub use super::u256::*;
         pub use super::version::*;
     }
@@ -90,7 +101,9 @@ mod utils {
 
     mod hash;
     mod helpers;
+    #[cfg(feature = "sdk")]
     mod parse;
+    #[cfg(all(feature = "sdk", feature = "serde"))]
     mod serialize;
     mod time;
     mod venue;
@@ -98,17 +111,15 @@ mod utils {
     mod prelude {
         pub use super::hash::*;
         pub use super::helpers::*;
+        #[cfg(feature = "sdk")]
         pub use super::parse::*;
-        #[cfg(feature = "serde")]
+        #[cfg(all(feature = "sdk", feature = "serde"))]
         pub use super::serialize::*;
         pub use super::time::*;
         pub use super::venue::*;
     }
 }
 // re-exports
-#[cfg(feature = "frame-identity")]
-#[doc(hidden)]
-pub use self::authenticated_frame_identity::*;
 #[cfg(feature = "clob")]
 #[doc(inline)]
 pub use self::clob::prelude::*;
@@ -123,8 +134,11 @@ pub use self::utils::*;
 #[cfg(feature = "watch")]
 #[doc(inline)]
 pub use self::watch::BookWatcher;
+#[cfg(feature = "clob")]
 #[doc(inline)]
-pub use self::{auth::prelude::*, consts::*, error::*, retry::*, types::*};
+pub use self::{auth::prelude::*, retry::*};
+#[doc(inline)]
+pub use self::{consts::*, error::*, types::*};
 // prelude
 #[doc(hidden)]
 pub mod prelude {
@@ -135,6 +149,7 @@ pub mod prelude {
     pub use crate::dead_letter::*;
     #[cfg(feature = "gamma")]
     pub use crate::gamma::*;
+    #[cfg(feature = "clob")]
     pub use crate::retry::*;
     pub use crate::types::*;
     #[cfg(feature = "sdk")]

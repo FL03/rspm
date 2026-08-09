@@ -3,6 +3,7 @@
     Created At: 2026.08.08:07:42:02
     Contrib: @FL03
 */
+#[cfg(feature = "clob")]
 pub fn append_query_pair(
     query: &mut url::form_urlencoded::Serializer<'_, String>,
     name: &str,

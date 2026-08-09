@@ -2,6 +2,7 @@
 default-members = [
   "crates/rspm",
 ]
+exclude = ["patches/polymarket_client_sdk_v2"]
 members = [
   "crates/*",
 ]
@@ -73,7 +74,7 @@ serde_derive = { version = "1" }
 serde_json = { default-features = false, version = "1" }
 serde_path_to_error = { version = "0.1" }
 # polymarket
-polymarket_client_sdk_v2 = { version = "0.7" }
+polymarket_client_sdk_v2 = { path = "patches/polymarket_client_sdk_v2", version = "0.7" }
 # data-structures
 # WebAssembly
 wasm-bindgen = { default-features = false, version = "0.2" }
@@ -136,6 +137,3 @@ strip = true
 codegen-units = 4
 inherits = "release"
 lto = "thin"
-
-[patch.crates-io]
-polymarket_client_sdk_v2 = { path = "patches/polymarket_client_sdk_v2" }

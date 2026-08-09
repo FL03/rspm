@@ -4,6 +4,7 @@
     Contrib: @FL03
 */
 use crate::canonical_unsigned_integer_text;
+#[cfg(feature = "serde")]
 use core::str::FromStr;
 use polymarket::types::U256;
 

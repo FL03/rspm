@@ -8,5 +8,5 @@
 /// A type alias providing a named type for handling indentifiers to and from polymarket.
 pub type Id = alloc::string::String;
 /// Concrete signer type used by the Polymarket SDK.
-#[cfg(feature = "ecdsa")]
+#[cfg(all(feature = "ecdsa", feature = "sdk"))]
 pub type PrivateKeySigner = polymarket::auth::LocalSigner<k256::ecdsa::SigningKey>;

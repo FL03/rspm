@@ -944,6 +944,38 @@ fn alternating_drop_and_ack_pressure_is_permanently_bounded_and_closed() {
     ));
 }
 
+/// [REGRESSION][EVAL] RSPM's authenticated-frame contract ends at the exact
+/// payload and transport receipt facts needed by downstream consumers.
+#[test]
+fn raw_authenticated_frame_exposes_transport_receipt_facts_without_composition() {
+    let process_generation = "00000000-0000-4000-8000-000000000099";
+    let wall_time_ns = 1_700_000_000_000_000_099;
+    let monotonic_ns = 101;
+    let raw = AuthenticatedUserEventBatch::decode_frame(b"[]")
+        .expect("empty event array is an exact text frame")
+        .with_transport_context_for_test(17, 23, 29, 31)
+        .with_transport_receipt_for_test(process_generation, wall_time_ns, monotonic_ns)
+        .expect("fixed transport receipt is valid")
+        .raw_evidence();
+
+    assert_eq!(raw.frame_sequence(), 17);
+    assert_eq!(raw.first_transport_sequence(), 23);
+    assert_eq!(raw.last_transport_sequence(), 23);
+    assert_eq!(raw.socket_generation(), 29);
+    assert_eq!(raw.socket_gap_version(), 31);
+    assert_eq!(raw.encoding(), AuthenticatedUserFrameEncoding::Text);
+    assert_eq!(raw.gap(), None);
+    assert_eq!(raw.bytes(), b"[]");
+
+    let receipt = raw.receipt();
+    assert_eq!(
+        receipt.process_generation(),
+        uuid::Uuid::parse_str(process_generation).expect("fixed process generation")
+    );
+    assert_eq!(receipt.wall_time_ns(), wall_time_ns);
+    assert_eq!(receipt.monotonic_ns(), monotonic_ns);
+}
+
 #[test]
 fn mixed_array_rejects_atomically() {
     let payload = serde_json::json!([

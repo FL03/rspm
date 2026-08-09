@@ -2,6 +2,7 @@
 build = "build.rs"
 description = "Custom Polymarket utilities and primitives supporting integration into the axiom pipeline"
 name = "rspm"
+publish = false
 
 authors.workspace = true
 categories.workspace = true
@@ -26,6 +27,16 @@ tag-name = "v{{version}}"
 
 [lib]
 bench = false
+
+[[example]]
+name = "refresh_balance"
+path = "examples/refresh_balance.rs"
+required-features = ["clob"]
+
+[[test]]
+name = "empty_fee_rate_response"
+path = "tests/empty_fee_rate_response.rs"
+required-features = ["clob", "json"]
 
 [dependencies]
 # error
@@ -76,6 +87,7 @@ wasm-bindgen = { optional = true, workspace = true }
 
 [dev-dependencies]
 static_assertions = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync", "time"] }
 
 [features]
 default = [
@@ -109,15 +121,10 @@ clob = [
   "base64",
   "ecdsa",
   "hmac",
+  "sha2",
   "polymarket_client_sdk_v2?/clob",
   "serde_path_to_error",
-  "frame-identity",
   "url",
-]
-
-frame-identity = [
-  "alloc",
-  "sha2",
 ]
 
 gamma = [
@@ -178,6 +185,7 @@ alloc = [
 ]
 
 std = [
+  "alloc",
   "anyhow/std",
   "base64?/std",
   "num-traits/std",
@@ -272,6 +280,7 @@ tokio = [
 
 tracing = [
   "dep:tracing",
+  "polymarket_client_sdk_v2?/tracing",
 ]
 
 url = ["dep:url"]
