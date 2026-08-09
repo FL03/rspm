@@ -22,7 +22,7 @@ version = "0.0.0"
 
 [workspace.dependencies]
 
-rspm = { default-features = false, path = "crates/sdk", version = "0.0.0" }
+rspm = { default-features = false, path = "crates/rspm", version = "0.0.0" }
 # local
 # benchmarks
 criterion = { features = ["plotters"], version = "0.8" }
@@ -135,3 +135,6 @@ strip = true
 codegen-units = 4
 inherits = "release"
 lto = "thin"
+
+[patch.crates-io]
+polymarket_client_sdk_v2 = { path = "patches/polymarket_client_sdk_v2" }

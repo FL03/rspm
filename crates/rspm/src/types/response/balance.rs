@@ -4,8 +4,8 @@
     Contrib: @FL03
 */
 
-use polymarket::types::{Address, U256};
 use hashbrown::HashMap;
+use polymarket::types::{Address, U256};
 
 #[cfg_attr(
     feature = "serde",

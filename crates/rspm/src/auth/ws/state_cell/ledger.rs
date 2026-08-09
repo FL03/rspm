@@ -68,9 +68,7 @@ impl StateCell {
         inserted
     }
 
-    pub(in crate::auth::ws) fn pending_raw_frames(
-        &self,
-    ) -> Vec<AuthenticatedUserRawFrame> {
+    pub(in crate::auth::ws) fn pending_raw_frames(&self) -> Vec<AuthenticatedUserRawFrame> {
         let (pending, mutex_poisoned) = match self.raw_frames.lock() {
             Ok(raw_frames) => (
                 raw_frames
@@ -96,10 +94,7 @@ impl StateCell {
         pending
     }
 
-    pub(in crate::auth::ws) fn acknowledge_raw_frame_durable(
-        &self,
-        frame_sequence: u64,
-    ) -> bool {
+    pub(in crate::auth::ws) fn acknowledge_raw_frame_durable(&self, frame_sequence: u64) -> bool {
         let Ok(mut state) = self.lock() else {
             return false;
         };
@@ -137,10 +132,7 @@ impl StateCell {
         });
     }
 
-    pub(in crate::auth::ws) fn mark_dropped(
-        &self,
-        range: TransportSequenceRange,
-    ) -> bool {
+    pub(in crate::auth::ws) fn mark_dropped(&self, range: TransportSequenceRange) -> bool {
         let mut retained = false;
         let snapshot = {
             let Ok(mut state) = self.lock() else {
@@ -206,7 +198,6 @@ impl StateCell {
                 state.consumer_closed = true;
                 state.delivery_gap = true;
                 Self::advance_gap_version(&mut state);
-                acknowledged = false;
                 let snapshot = *state;
                 drop(out_of_order);
                 drop(state);

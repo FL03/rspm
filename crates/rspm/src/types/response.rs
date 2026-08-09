@@ -6,10 +6,10 @@
 #[doc(inline)]
 pub use self::prelude::*;
 
-mod version;
 mod balance;
+mod version;
 
 mod prelude {
-    pub use super::version::*;
     pub use super::balance::*;
+    pub use super::version::*;
 }

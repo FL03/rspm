@@ -4,8 +4,8 @@
     Contrib: @FL03
 */
 use crate::canonical_unsigned_integer_text;
-use polymarket::types::U256;
 use core::str::FromStr;
+use polymarket::types::U256;
 
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[cfg_attr(

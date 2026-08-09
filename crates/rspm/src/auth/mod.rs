@@ -7,6 +7,7 @@
 pub use self::prelude::*;
 
 pub mod error;
+#[cfg(feature = "ws")]
 pub mod ws;
 
 mod balance;
@@ -19,11 +20,9 @@ mod types {
     #[doc(inline)]
     pub use self::prelude::*;
 
-    mod credentials;
     mod endpoint;
 
     mod prelude {
-        pub use super::credentials::*;
         pub use super::endpoint::*;
     }
 }
@@ -272,7 +271,8 @@ mod tests {
             for _ in 0..MAX_ATTEMPTS {
                 let (mut socket, _) = redirect.accept().await.expect("redirect accept");
                 let mut request = [0_u8; 8_192];
-                socket.read(&mut request).await.expect("redirect request");
+                let bytes_read = socket.read(&mut request).await.expect("redirect request");
+                assert!(bytes_read > 0, "redirect request must not be empty");
                 let response = format!(
                     "HTTP/1.1 302 Found\r\nLocation: http://{sink_address}/sink\r\nContent-Length: 0\r\n\r\n"
                 );

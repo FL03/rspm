@@ -28,9 +28,9 @@ mod utils {
 }
 
 pub(crate) mod prelude {
+    pub use super::client::*;
     pub use super::consts::*;
     pub use super::utils::*;
-    pub use super::client::*;
 }
 
 #[cfg(test)]

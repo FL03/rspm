@@ -43,7 +43,6 @@ pub struct AuthenticatedPrivateFrameIdentityV1<'a> {
     pub payload: &'a [u8],
 }
 
-
 fn framed_sha256(domain: &[u8], parts: &[&[u8]]) -> Result<String, &'static str> {
     let mut digest = Sha256::new();
     for part in core::iter::once(domain).chain(parts.iter().copied()) {

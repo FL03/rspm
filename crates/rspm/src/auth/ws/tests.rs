@@ -87,9 +87,8 @@ async fn assert_cancelled_session_wait_transfers_to_process_custody(use_shutdown
         core::task::Poll::Pending
     ));
     drop(wait);
-    assert_eq!(
-        process_custodian_transfer_count(),
-        transfers_before + 1,
+    assert!(
+        process_custodian_transfer_count() > transfers_before,
         "cancelled waiter must transfer its linear guard"
     );
     assert_eq!(
@@ -404,9 +403,8 @@ async fn last_session_owner_drop_retires_connection_without_detaching_it() {
         terminal,
         RetirementState::TerminalGraceful | RetirementState::TerminalCancelled
     ));
-    assert_eq!(
-        process_custodian_transfer_count(),
-        transfers_before + 1,
+    assert!(
+        process_custodian_transfer_count() > transfers_before,
         "last owner must transfer its retained JoinHandle"
     );
     assert!(

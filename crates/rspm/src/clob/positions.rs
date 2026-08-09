@@ -112,9 +112,9 @@ impl TryFrom<WirePosition> for PositionInventoryEntry {
             crate::auth::AuthenticatedEndpointError::response_schema_decode(endpoint, "proxyWallet")
         })?;
         if !canonical_unsigned_integer_text(&position.asset) {
-            return Err(crate::auth::AuthenticatedEndpointError::response_schema_decode(
-                endpoint, "asset",
-            ));
+            return Err(
+                crate::auth::AuthenticatedEndpointError::response_schema_decode(endpoint, "asset"),
+            );
         }
         let asset = U256::from_str(&position.asset).map_err(|_| {
             crate::auth::AuthenticatedEndpointError::response_schema_decode(endpoint, "asset")
@@ -132,7 +132,9 @@ impl TryFrom<WirePosition> for PositionInventoryEntry {
             || position.outcome.is_empty()
             || position.outcome.len() > 256
         {
-            return Err(crate::auth::AuthenticatedEndpointError::request_failed(endpoint));
+            return Err(crate::auth::AuthenticatedEndpointError::request_failed(
+                endpoint,
+            ));
         }
         Ok(Self {
             proxy_wallet,
@@ -155,10 +157,12 @@ fn exact_json_decimal(
     let text = raw.get();
     let canonical = crate::canonical_nonnegative_decimal_text(text);
     if !canonical {
-        return Err(crate::auth::AuthenticatedEndpointError::response_schema_decode(
-            crate::auth::AuthenticatedEndpoint::Positions,
-            path,
-        ));
+        return Err(
+            crate::auth::AuthenticatedEndpointError::response_schema_decode(
+                crate::auth::AuthenticatedEndpoint::Positions,
+                path,
+            ),
+        );
     }
     Decimal::from_str_exact(text).map_err(|_| {
         crate::auth::AuthenticatedEndpointError::response_schema_decode(
@@ -190,7 +194,9 @@ fn next_offset(
         return Ok(None);
     }
     let next = offset.checked_add(PAGE_LIMIT).ok_or_else(|| {
-        crate::auth::AuthenticatedEndpointError::request_failed(crate::auth::AuthenticatedEndpoint::Positions)
+        crate::auth::AuthenticatedEndpointError::request_failed(
+            crate::auth::AuthenticatedEndpoint::Positions,
+        )
     })?;
     if next > MAX_OFFSET {
         return Err(crate::auth::AuthenticatedEndpointError::request_failed(
@@ -315,3 +321,5 @@ impl PositionInventoryClient {
     }
 }
 
+#[cfg(test)]
+mod tests;

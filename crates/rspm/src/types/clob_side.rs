@@ -70,8 +70,10 @@
 pub enum ClobSide {
     /// Buy order — opens or adds to a position at the limit price or better.
     #[default]
+    #[cfg_attr(feature = "serde", serde(alias = "buy"))]
     Buy,
     /// Sell order — closes or reduces a position at the limit price or better.
+    #[cfg_attr(feature = "serde", serde(alias = "sell"))]
     Sell,
 }
 
@@ -194,6 +196,20 @@ mod tests {
         assert_eq!(ClobSide::default(), ClobSide::Buy);
     }
 
+    /// [REGRESSION][EVAL] Authenticated transport and public CLOB APIs must
+    /// share one order-direction type while outcome `Side` remains a separate
+    /// Yes/No axis.
+    #[test]
+    fn authenticated_side_is_clob_side_and_outcome_side_stays_distinct() {
+        let authenticated: crate::auth::AuthenticatedVenueSide = ClobSide::Sell;
+        let canonical: ClobSide = authenticated;
+        assert_eq!(canonical, ClobSide::Sell);
+        assert_ne!(
+            core::any::TypeId::of::<ClobSide>(),
+            core::any::TypeId::of::<crate::types::Side>()
+        );
+    }
+
     #[cfg(feature = "serde")]
     #[test]
     fn serde_round_trip_is_tagged_uppercase_string() {
@@ -209,9 +225,19 @@ mod tests {
         assert_eq!(buy_json, "\"BUY\"");
         assert_eq!(sell_json, "\"SELL\"");
 
-        let from_buy: ClobSide = serde_json::from_str("\"BUY\"").unwrap();
-        let from_sell: ClobSide = serde_json::from_str("\"SELL\"").unwrap();
-        assert_eq!(from_buy, ClobSide::Buy);
-        assert_eq!(from_sell, ClobSide::Sell);
+        for (wire, expected) in [
+            ("\"BUY\"", ClobSide::Buy),
+            ("\"buy\"", ClobSide::Buy),
+            ("\"SELL\"", ClobSide::Sell),
+            ("\"sell\"", ClobSide::Sell),
+        ] {
+            assert_eq!(serde_json::from_str::<ClobSide>(wire).unwrap(), expected);
+        }
+        for outcome in ["\"YES\"", "\"NO\"", "\"yes\"", "\"no\""] {
+            assert!(
+                serde_json::from_str::<ClobSide>(outcome).is_err(),
+                "outcome vocabulary must not decode as order direction: {outcome}"
+            );
+        }
     }
 }

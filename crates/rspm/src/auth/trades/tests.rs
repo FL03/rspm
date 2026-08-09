@@ -1,4 +1,5 @@
-use rspm::*;
+use super::*;
+use crate::{auth::TERMINAL_CURSOR, canonical_nonnegative_decimal_text};
 
 #[test]
 fn trades_query_covers_every_public_filter_and_cursor() {
@@ -182,7 +183,7 @@ fn canonical_decimal_lexeme_rejects_ambiguous_or_signed_text() {
 
 #[test]
 fn page_invariants_accept_both_terminal_forms_and_reject_gaps() {
-    for terminal in ["", super::super::authenticated::TERMINAL_CURSOR] {
+    for terminal in ["", TERMINAL_CURSOR] {
         let body = format!(r#"{{"data":[],"next_cursor":"{terminal}","limit":100,"count":0}}"#);
         AuthenticatedTradePage::decode_json(body.as_bytes()).expect("valid terminal page");
     }

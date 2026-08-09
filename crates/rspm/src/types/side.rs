@@ -41,7 +41,6 @@ use polymarket::clob::types::Side as ClobSide;
     strum::Display,
     strum::EnumCount,
     strum::EnumIs,
-    strum::EnumString,
     strum::IntoStaticStr,
     strum::VariantNames,
 )]
@@ -61,6 +60,20 @@ pub enum Side {
     /// The NO outcome — BTC closes at or below the strike price.
     #[cfg_attr(feature = "serde", serde(alias = "no", alias = "NO"))]
     No = 0,
+}
+
+impl core::str::FromStr for Side {
+    type Err = strum::ParseError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        if value.eq_ignore_ascii_case("yes") || value.eq_ignore_ascii_case("buy") {
+            Ok(Self::Yes)
+        } else if value.eq_ignore_ascii_case("no") || value.eq_ignore_ascii_case("sell") {
+            Ok(Self::No)
+        } else {
+            Err(strum::ParseError::VariantNotFound)
+        }
+    }
 }
 
 impl Side {

@@ -187,10 +187,12 @@ fn authenticated_clob_host_is_safe(raw: &str) -> bool {
         let Ok(url) = url::Url::parse(raw) else {
             return false;
         };
-        return url.scheme() == "http" && has_no_ambient_url_data(&url) && loopback_host(&url);
+        url.scheme() == "http" && has_no_ambient_url_data(&url) && loopback_host(&url)
     }
     #[cfg(not(any(test, feature = "test-utils")))]
-    false
+    {
+        false
+    }
 }
 
 pub(crate) fn authenticated_clob_endpoint_is_safe(endpoint: &url::Url) -> bool {
@@ -205,13 +207,15 @@ pub(crate) fn authenticated_clob_endpoint_is_safe(endpoint: &url::Url) -> bool {
     }
     #[cfg(any(test, feature = "test-utils"))]
     {
-        return endpoint.scheme() == "http"
+        endpoint.scheme() == "http"
             && endpoint.port().is_some()
             && has_no_ambient_url_data(endpoint)
-            && loopback_host(endpoint);
+            && loopback_host(endpoint)
     }
     #[cfg(not(any(test, feature = "test-utils")))]
-    false
+    {
+        false
+    }
 }
 
 fn proxy_url_is_safe(raw: &str) -> bool {

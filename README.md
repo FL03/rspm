@@ -106,6 +106,14 @@ Or, if you want to run the tests, you can use:
 cargo test --workspace --release --all-features
 ```
 
+### Upstream SDK patch
+
+The workspace activates `patches/polymarket_client_sdk_v2` through
+`[patch.crates-io]`. This makes standalone clones use the same authenticated
+submission and WebSocket lifecycle contracts as downstream consumers. See
+`patches/polymarket_client_sdk_v2/AXIOM_PATCH.md` for provenance and removal
+criteria.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first

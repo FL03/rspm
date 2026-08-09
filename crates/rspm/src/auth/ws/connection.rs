@@ -391,6 +391,13 @@ fn doubled_delay(current: Duration, maximum: Duration) -> Option<Duration> {
     current.checked_mul(2).map(|delay| delay.min(maximum))
 }
 
+async fn wait_or_shutdown(delay: Duration, shutdown_rx: &mut watch::Receiver<bool>) -> bool {
+    tokio::select! {
+        () = tokio::time::sleep(delay) => false,
+        changed = shutdown_rx.changed() => changed.is_err() || *shutdown_rx.borrow(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -408,12 +415,5 @@ mod tests {
             doubled_delay(Duration::from_secs(2), Duration::from_secs(3)),
             Some(Duration::from_secs(3))
         );
-    }
-}
-
-async fn wait_or_shutdown(delay: Duration, shutdown_rx: &mut watch::Receiver<bool>) -> bool {
-    tokio::select! {
-        () = tokio::time::sleep(delay) => false,
-        changed = shutdown_rx.changed() => changed.is_err() || *shutdown_rx.borrow(),
     }
 }

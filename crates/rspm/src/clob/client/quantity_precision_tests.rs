@@ -1,4 +1,4 @@
-use rspm::clob::*;
+use super::*;
 use core::str::FromStr as _;
 use polymarket::auth::Credentials;
 use std::sync::{

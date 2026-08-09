@@ -3128,8 +3128,6 @@ checksum = "19f132c84eca552bf34cab8ec81f1c1dcc229b811638f9d283dceabe58c5569e"
 [[package]]
 name = "polymarket_client_sdk_v2"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba212e0641f178c274af266772de15962ac7e76da550a0f79f47b49349b1138a"
 dependencies = [
  "alloy",
  "async-stream",
@@ -3158,6 +3156,7 @@ dependencies = [
  "strum_macros",
  "tokio",
  "tokio-tungstenite 0.29.0",
+ "tokio-util",
  "url",
  "uuid",
 ]

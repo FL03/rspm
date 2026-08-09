@@ -10,9 +10,6 @@ use alloc::{
 /// A type alias for a [`Result`](core::result::Result) with an error type of [`Error`]
 pub type Result<T> = core::result::Result<T, Error>;
 
-
-
-
 /// Errors produced by the Polymarket client.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -116,5 +113,3 @@ impl Error {
         Self::RateLimited { retry_after }
     }
 }
-
-

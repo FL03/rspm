@@ -10,7 +10,7 @@ use super::{
     clob_price_decimal, clob_share_decimal, controller_pair, poll_transport_after_begin,
 };
 #[cfg(feature = "ws")]
-use crate::auth::ws::AuthenticatedUserWs;
+use crate::auth::ws::{AuthenticatedUserWs, AuthenticatedUserWsError};
 use crate::auth::{
     AuthenticatedBalanceClient, AuthenticatedBalanceSnapshot, AuthenticatedCredentialIdentity,
     AuthenticatedEndpoint, AuthenticatedEndpointError, AuthenticatedHttpClient, AuthenticatedOrder,
@@ -1383,7 +1383,7 @@ impl ClobClient {
             .await
             .map(|response| CancelOrdersOutcome {
                 canceled: response.canceled,
-                not_canceled: response.not_canceled,
+                not_canceled: response.not_canceled.into_iter().collect(),
             })
             .map_err(|error| classify_operation_error(&error))
     }
@@ -1399,7 +1399,7 @@ impl ClobClient {
             .await
             .map(|response| CancelOrdersOutcome {
                 canceled: response.canceled,
-                not_canceled: response.not_canceled,
+                not_canceled: response.not_canceled.into_iter().collect(),
             })
             .map_err(|error| classify_operation_error(&error))
     }
@@ -1430,3 +1430,6 @@ impl ClobClient {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod quantity_precision_tests;

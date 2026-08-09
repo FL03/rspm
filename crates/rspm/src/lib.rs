@@ -10,7 +10,6 @@
     clippy::should_implement_trait
 )]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(all(feature = "nightly", feature = "alloc"), feature(allocator_api))]
 // compile-time checks
 #[cfg(not(any(feature = "std", feature = "alloc")))]
 compile_error! { "Either the `std` or `alloc` feature must be enabled." }
@@ -71,7 +70,6 @@ pub mod types {
         pub use super::market::*;
         pub use super::order::*;
         pub use super::position::*;
-        pub use super::request::*;
         pub use super::resolution::*;
         pub use super::response::*;
         pub use super::side::*;

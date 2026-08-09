@@ -5,7 +5,7 @@ use std::sync::Arc;
 use serde::Deserialize as _;
 
 use super::{
-    AuthenticatedUserEvent, AuthenticatedUserWsError, MAX_FRAME_BYTES, WireUserEventBatch,
+    AuthenticatedUserEvent, AuthenticatedUserWsError, MAX_FRAME_BYTES, wire::WireUserEventBatch,
 };
 use crate::{
     AuthenticatedPrivateFrameIdentityEncodingV1, AuthenticatedPrivateFrameIdentityGapV1,

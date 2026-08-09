@@ -4,7 +4,6 @@
     Contrib: @FL03
 */
 
-
 /// Default chain ID: Polygon PoS mainnet.
 pub const DEFAULT_CHAIN_ID: u64 = 137;
 /// The base url for the Gamma API markets endpoint

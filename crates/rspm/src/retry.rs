@@ -131,7 +131,6 @@ impl RateLimitSignal {
 /// [`RetryPolicy`] backoff. [`parse_retry_after`] separately proves the RFC
 /// 9110 delta-seconds contract for any future transport that exposes headers.
 #[must_use]
-
 pub fn classify_clob_error(e: &polymarket::error::Error) -> RateLimitSignal {
     let Some(status) = e.downcast_ref::<polymarket::error::Status>() else {
         return RateLimitSignal::NotRateLimited;

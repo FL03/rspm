@@ -29,12 +29,6 @@ use super::{
 };
 
 pub(super) use super::retirement::RetirementState;
-pub use super::retirement::drain_authenticated_user_ws_retirements;
-#[cfg(test)]
-pub(super) use super::retirement::{
-    drain_failed_retirements_for_test, process_custodian_transfer_count,
-    transfer_to_disconnected_custodian_for_test, try_reserve_retirement_slot,
-};
 struct AuthenticatedUserWsInner {
     state: StateCell,
     custody_poisoned: AtomicBool,

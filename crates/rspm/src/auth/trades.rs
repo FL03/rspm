@@ -8,7 +8,8 @@ use crate::auth::{
     venue_identifier_is_valid,
 };
 use crate::utils::{
-    decode_json, optional_quoted_decimal, append_query_pair, quoted_decimal, quoted_hash_or_zero, quoted_i64,
+    append_query_pair, decode_json, optional_quoted_decimal, quoted_decimal, quoted_hash_or_zero,
+    quoted_i64,
 };
 use polymarket::{
     auth::{ApiKey, Normal, state::Authenticated},
@@ -40,15 +41,12 @@ impl core::fmt::Debug for AuthenticatedTradePage {
     }
 }
 
-/// Strict venue action side from an authenticated trade page.
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
-pub enum AuthenticatedVenueSide {
-    #[serde(rename = "BUY", alias = "buy")]
-    Buy,
-    #[serde(rename = "SELL", alias = "sell")]
-    Sell,
-}
+/// Authenticated venue action side.
+///
+/// This is the canonical CLOB order-direction type, not a parallel enum. It is
+/// deliberately distinct from [`crate::types::Side`], whose variants represent
+/// binary market outcomes (`Yes`/`No`).
+pub use crate::types::ClobSide as AuthenticatedVenueSide;
 
 /// Strict account role from an authenticated trade page.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
@@ -493,3 +491,6 @@ where
 {
     Ok(Option::<Vec<WireMakerOrder>>::deserialize(deserializer)?.unwrap_or_default())
 }
+
+#[cfg(test)]
+mod tests;

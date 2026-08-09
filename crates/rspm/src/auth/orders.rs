@@ -5,7 +5,7 @@ use crate::auth::{
     AuthenticatedVenueSide, cursor_is_terminal, cursor_is_valid, validate_page,
     venue_identifier_is_valid,
 };
-use crate::{decode_json, append_query_pair, quoted_decimal, quoted_i64};
+use crate::{append_query_pair, decode_json, quoted_decimal, quoted_i64};
 use polymarket::{
     auth::{ApiKey, Normal, state::Authenticated},
     clob::Client,
@@ -48,7 +48,8 @@ pub enum AuthenticatedOrderStatus {
 }
 
 /// Exact owned representation of one authenticated account order.
-#[derive(Clone, PartialEq)]#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+#[derive(Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct AuthenticatedOrder {
     pub id: String,
     pub status: AuthenticatedOrderStatus,
@@ -325,3 +326,6 @@ impl AuthenticatedOrdersClient {
         Ok(order)
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -3,17 +3,20 @@
     Created At: 2026.08.08:02:46:07
     Contrib: @FL03
 */
-use polymarket::{auth::{Credentials, ExposeSecret}, types::Address};
-use crate::URL_SAFE;
-use hmac::Hmac;
+use base64::{Engine as _, engine::general_purpose::URL_SAFE};
+use hmac::{Hmac, KeyInit as _, Mac as _};
+use polymarket::{
+    auth::{Credentials, ExposeSecret},
+    types::Address,
+};
 use reqwest::header::{HeaderMap, HeaderValue};
-use crate::auth::{POLY_ADDRESS, POLY_API_KEY, POLY_PASSPHRASE, POLY_SIGNATURE, POLY_TIMESTAMP};
 use sha2::Sha256;
+
+use crate::auth::{POLY_ADDRESS, POLY_API_KEY, POLY_PASSPHRASE, POLY_SIGNATURE, POLY_TIMESTAMP};
 
 pub fn authenticated_endpoint_is_safe(endpoint: &url::Url) -> bool {
     crate::clob::authenticated_clob_endpoint_is_safe(endpoint)
 }
-
 
 pub fn signature_material(timestamp: i64, path: &str) -> String {
     format!("{timestamp}GET{path}")

@@ -18,7 +18,7 @@ impl MarketSnapshot {
     /// # Examples
     ///
     /// ```rust
-    /// use axiom_core::types::MarketSnapshot;
+    /// use rspm::types::MarketSnapshot;
     ///
     /// let snap = MarketSnapshot::new(
     ///     "btc-100k",

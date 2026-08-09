@@ -47,7 +47,7 @@ impl Fill {
     /// # Examples
     ///
     /// ```rust
-    /// use axiom_core::types::{Fill, Side};
+    /// use rspm::types::{Fill, Side};
     ///
     /// let fill = Fill::new("ord-001", "filled", "btc-sprint", Side::Yes, 0.60, 20.0, 1_700_000_000);
     /// assert_eq!(fill.cost, 12.0);
@@ -97,7 +97,7 @@ impl Fill {
     /// Pass the actual resolved payout if it differs.
     ///
     /// ```rust
-    /// use axiom_core::types::{Fill, Side};
+    /// use rspm::types::{Fill, Side};
     ///
     /// let fill = Fill::new("o1", "filled", "mkt", Side::Yes, 0.60, 10.0, 0);
     /// // If YES wins: payout = 1.0 * 10 = 10, cost = 6, PnL = 4

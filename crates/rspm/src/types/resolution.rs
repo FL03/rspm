@@ -38,7 +38,7 @@ impl Resolution {
     /// # Examples
     ///
     /// ```rust
-    /// use axiom_core::types::{Resolution, Side};
+    /// use rspm::types::{Resolution, Side};
     ///
     /// let res = Resolution::new("mkt-001", Side::Yes, Side::Yes, 20.0, 0.62, 7.60);
     /// assert!(res.is_win());

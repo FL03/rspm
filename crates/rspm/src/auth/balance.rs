@@ -416,3 +416,6 @@ impl AuthenticatedBalanceSnapshot {
             .build())
     }
 }
+
+#[cfg(test)]
+mod tests;

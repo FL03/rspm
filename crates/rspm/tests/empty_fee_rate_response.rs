@@ -1,5 +1,5 @@
 use polymarket_client_sdk_v2::types::{Address, B256, U256};
-use rspm::clob::{AuthenticatedTradePage, AuthenticatedTradeStatus, AuthenticatedTradesRequest};
+use rspm::auth::{AuthenticatedTradePage, AuthenticatedTradeStatus, AuthenticatedTradesRequest};
 use serde_json::{Value, json};
 
 fn maker_order(fee_rate_bps: Option<Value>, order_id: &str) -> Value {
@@ -50,7 +50,7 @@ fn trade_page(makers: Vec<Value>) -> Value {
     })
 }
 
-fn decode(page: Value) -> Result<AuthenticatedTradePage, rspm::AuthenticatedEndpointError> {
+fn decode(page: Value) -> Result<AuthenticatedTradePage, rspm::auth::AuthenticatedEndpointError> {
     let body = serde_json::to_vec(&page).expect("fixture JSON must serialize");
     AuthenticatedTradePage::decode_json(&body)
 }

@@ -48,10 +48,7 @@ pub fn validate_page(
         || !cursor_valid
         || (data_len == 0 && !cursor_is_terminal(next_cursor))
     {
-        return Err(AuthenticatedEndpointError::request_failed(
-            endpoint,
-        ));
+        return Err(AuthenticatedEndpointError::request_failed(endpoint));
     }
     Ok(())
 }
-

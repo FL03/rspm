@@ -23,8 +23,8 @@ use super::{
 pub(super) struct StateCell {
     state: Arc<Mutex<AuthenticatedUserWsState>>,
     authority_poisoned: Arc<AtomicBool>,
-    pub(in crate::clob::authenticated_ws) durable_out_of_order: Arc<Mutex<BTreeSet<u64>>>,
-    pub(in crate::clob::authenticated_ws) dropped_ranges: Arc<Mutex<Vec<(u64, u64)>>>,
+    pub(in crate::auth::ws) durable_out_of_order: Arc<Mutex<BTreeSet<u64>>>,
+    pub(in crate::auth::ws) dropped_ranges: Arc<Mutex<Vec<(u64, u64)>>>,
     raw_frames: Arc<Mutex<BTreeMap<u64, PendingRawFrame>>>,
     raw_frame_capacity: Arc<Semaphore>,
     pub(super) state_tx: watch::Sender<AuthenticatedUserWsState>,

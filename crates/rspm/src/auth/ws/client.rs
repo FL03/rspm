@@ -6,25 +6,18 @@
 //! This module therefore owns the user socket, authenticated subscription,
 //! strict frame decoding, bounded delivery, and reconnect/catch-up generation.
 
-use crate::auth::{
-    AuthenticatedCredentialAuthority, AuthenticatedCredentialIdentity, AuthenticatedTraderSide,
-    AuthenticatedVenueSide, venue_identifier_is_valid,
-};
-use crate::utils::{
-    canonical_unsigned_integer_text, quoted_decimal,
-};
 use core::time::Duration;
 
 pub const USER_WS_HOST: &str = "wss://ws-subscriptions-clob.polymarket.com";
 
-const EVENT_CHANNEL_CAPACITY: usize = 256;
-const MAX_DURABLE_OUT_OF_ORDER: usize = EVENT_CHANNEL_CAPACITY * 4;
-const MAX_DROPPED_RANGES: usize = 1;
-const MAX_PENDING_RAW_FRAMES: usize = EVENT_CHANNEL_CAPACITY * 4;
-const MAX_FRAME_BYTES: usize = 1024 * 1024;
-const SOCKET_CLOSE_TIMEOUT: Duration = Duration::from_millis(500);
-const SESSION_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(1);
-const RETIREMENT_RESPONSE_MARGIN: Duration = Duration::from_millis(500);
+pub(super) const EVENT_CHANNEL_CAPACITY: usize = 256;
+pub(super) const MAX_DURABLE_OUT_OF_ORDER: usize = EVENT_CHANNEL_CAPACITY * 4;
+pub(super) const MAX_DROPPED_RANGES: usize = 1;
+pub(super) const MAX_PENDING_RAW_FRAMES: usize = EVENT_CHANNEL_CAPACITY * 4;
+pub(super) const MAX_FRAME_BYTES: usize = 1024 * 1024;
+pub(super) const SOCKET_CLOSE_TIMEOUT: Duration = Duration::from_millis(500);
+pub(super) const SESSION_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(1);
+pub(super) const RETIREMENT_RESPONSE_MARGIN: Duration = Duration::from_millis(500);
 
 /// Production connection policy for the authenticated user channel.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -51,7 +44,7 @@ impl Default for AuthenticatedUserWsConfig {
 }
 
 impl AuthenticatedUserWsConfig {
-    fn is_valid(self) -> bool {
+    pub(super) fn is_valid(self) -> bool {
         !self.connect_timeout.is_zero()
             && !self.heartbeat_interval.is_zero()
             && self.heartbeat_timeout >= self.heartbeat_interval
@@ -84,5 +77,3 @@ pub enum AuthenticatedUserWsError {
     #[error("authenticated user-channel frame failed strict schema validation")]
     FrameSchema,
 }
-
-

@@ -1,12 +1,11 @@
 //! Strict all-or-nothing private-frame decoder.
 
-use crate::auth::{
-    AuthenticatedTraderSide, AuthenticatedVenueSide, venue_identifier_is_valid,
+use crate::auth::ws::{
+    AuthenticatedUserEvent, AuthenticatedUserMakerOrder, AuthenticatedUserOrder,
+    AuthenticatedUserOrderStatus, AuthenticatedUserOrderType, AuthenticatedUserTrade,
+    AuthenticatedUserTradeStatus, AuthenticatedUserVenueOrderType, AuthenticatedUserWsError,
 };
-use crate::auth::ws::{AuthenticatedUserEvent, AuthenticatedUserMakerOrder,
-    AuthenticatedUserOrder, AuthenticatedUserOrderStatus, AuthenticatedUserOrderType,
-    AuthenticatedUserTrade, AuthenticatedUserTradeStatus, AuthenticatedUserVenueOrderType,
-    AuthenticatedUserWsError, };
+use crate::auth::{AuthenticatedTraderSide, AuthenticatedVenueSide, venue_identifier_is_valid};
 use crate::utils::{canonical_unsigned_integer_text, optional_quoted_decimal, quoted_decimal};
 use core::str::FromStr as _;
 use polymarket::{

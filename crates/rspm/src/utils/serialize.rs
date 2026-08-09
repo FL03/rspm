@@ -4,8 +4,8 @@
     Contrib: @FL03
 */
 #![cfg(feature = "serde")]
-use crate::{canonical_nonnegative_decimal_text, canonical_unsigned_integer_text};
 use crate::types::CanonicalU256;
+use crate::{canonical_nonnegative_decimal_text, canonical_unsigned_integer_text};
 use core::str::FromStr;
 use hashbrown::HashMap;
 use polymarket::types::{Address, U256};
@@ -15,7 +15,7 @@ pub fn deserialize_u256<'de, D>(deserializer: D) -> Result<U256, D::Error>
 where
     D: Deserializer<'de>,
 {
-    Deserialize::<'de>::deserialize::<D>(deserializer)
+    Deserialize::<'de>::deserialize::<D>(deserializer).map(|CanonicalU256(value)| value)
 }
 
 pub fn deserialize_allowances<'de, D>(deserializer: D) -> Result<HashMap<Address, U256>, D::Error>
