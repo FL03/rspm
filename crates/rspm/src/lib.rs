@@ -117,7 +117,7 @@ pub use self::clob::prelude::*;
 pub use self::dead_letter::{ClobSubmitContext, DeadLetterRecord, record_dead_letter};
 #[cfg(feature = "gamma")]
 #[doc(inline)]
-pub use self::gamma::GammaClient;
+pub use self::gamma::{GAMMA_BASE, GammaClient};
 #[doc(inline)]
 pub use self::utils::*;
 #[cfg(feature = "watch")]
