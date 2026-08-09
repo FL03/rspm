@@ -19,7 +19,7 @@ use crate::auth::{
     AuthenticatedTradesClient, AuthenticatedTradesRequest, venue_identifier_is_valid,
 };
 use crate::clob::operations::CancelOrdersOutcome;
-use crate::types::{PrivateKeySigner, ProtocolVersion};
+use crate::types::{ClobSide, PrivateKeySigner, ProtocolVersion};
 use crate::utils::parse_token_id;
 use anyhow::Result;
 use polymarket::clob::types::{request::MidpointRequest, response::OrderBookSummaryResponse};
@@ -29,7 +29,7 @@ use polymarket::{
     clob::{
         Client, Config,
         types::{
-            AssetType, OrderType, Side, SignableOrder, SignatureType,
+            AssetType, OrderType, Side as SdkSide, SignableOrder, SignatureType,
             request::{BalanceAllowanceRequest, OrderBookSummaryRequest},
             response::BalanceAllowanceResponse,
         },
@@ -1077,10 +1077,31 @@ impl ClobClient {
     /// The opaque permit returned by `authorize_attempt` is held across the
     /// exact build + sign + POST attempt and dropped before retry backoff.
     /// Returning `None` prevents that attempt and every subsequent attempt.
+    ///
+    /// Outcome identity cannot cross this action boundary:
+    ///
+    /// ```compile_fail
+    /// # async fn outcome_is_not_an_action(client: &rspm::ClobClient) {
+    /// let _ = client
+    ///     .submit_fak("no-token", rspm::Side::No, 0.5, 1.0, || async { None })
+    ///     .await;
+    /// # }
+    /// ```
+    ///
+    /// The external SDK type is also private to the RSPM construction seam:
+    ///
+    /// ```compile_fail
+    /// # async fn sdk_type_is_not_the_public_action(client: &rspm::ClobClient) {
+    /// use polymarket_client_sdk_v2::clob::types::Side as SdkSide;
+    /// let _ = client
+    ///     .submit_fak("no-token", SdkSide::Buy, 0.5, 1.0, || async { None })
+    ///     .await;
+    /// # }
+    /// ```
     pub async fn submit_fak<A, Authorization>(
         &self,
         token_id: &str,
-        side: Side,
+        side: ClobSide,
         price: f64,
         size: f64,
         authorize_attempt: A,
@@ -1118,7 +1139,7 @@ impl ClobClient {
                     .token_id(tid)
                     .price(price_dec)
                     .size(size_dec)
-                    .side(side)
+                    .side(side.into())
                     .order_type(OrderType::FAK)
                     .build()
                     .await
@@ -1186,7 +1207,7 @@ impl ClobClient {
                     .token_id(tid)
                     .price(price_dec)
                     .size(size_dec)
-                    .side(Side::Sell)
+                    .side(SdkSide::Sell)
                     .post_only(true)
                     .build()
                     .await
@@ -1267,7 +1288,7 @@ impl ClobClient {
                     .token_id(tid)
                     .price(price_dec)
                     .size(size_dec)
-                    .side(Side::Buy)
+                    .side(SdkSide::Buy)
                     .order_type(OrderType::GTC)
                     .post_only(true)
                     .build()

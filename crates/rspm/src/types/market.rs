@@ -224,7 +224,7 @@ impl From<Market> for MarketSnapshot {
     }
 }
 
-#[cfg(all(test, feature = "serde"))]
+#[cfg(all(test, feature = "json"))]
 mod tests {
     use super::*;
 

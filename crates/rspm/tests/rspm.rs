@@ -50,22 +50,22 @@ fn tick_size_is_valid() {
 
 #[test]
 fn order_req_new_roundtrips() {
-    use rspm::types::Side;
-    let req = OrderReq::new("token_abc", 0.65, 100.0, Side::Yes);
+    use rspm::types::ClobSide;
+    let req = OrderReq::new("token_abc", 0.65, 100.0, ClobSide::Buy);
     assert_eq!(req.token_id, "token_abc");
     assert!((req.price - 0.65).abs() < f64::EPSILON);
     assert!((req.size - 100.0).abs() < f64::EPSILON);
-    assert_eq!(req.side, Side::Yes);
+    assert_eq!(req.side, ClobSide::Buy);
 }
 
 #[test]
-fn order_req_sides_are_typed() {
-    use rspm::types::Side;
-    let buy = OrderReq::new("t", 0.5, 10.0, Side::Yes);
-    assert!(buy.side.is_yes());
+fn order_req_actions_are_typed() {
+    use rspm::types::ClobSide;
+    let buy = OrderReq::new("t", 0.5, 10.0, ClobSide::Buy);
+    assert!(buy.side.is_buy());
 
-    let sell = OrderReq::new("t", 0.5, 10.0, Side::No);
-    assert!(sell.side.is_no());
+    let sell = OrderReq::new("t", 0.5, 10.0, ClobSide::Sell);
+    assert!(sell.side.is_sell());
 }
 
 // ─── PolymarketQdbRow ────────────────────────────────────────────────────────

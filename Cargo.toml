@@ -64,6 +64,7 @@ time = { default-features = false, version = "0.3" }
 lazy_static = { version = "1" }
 paste = { version = "1" }
 smart-default = { version = "0.7" }
+static_assertions = { version = "1" }
 strum = { default-features = false, features = ["derive"], version = "0.28" }
 # serialization
 schemars = { default-features = false, features = ["derive"], version = "1" }

@@ -3,11 +3,9 @@
     Created At: 2026.03.17:19:47:16
     Contrib: @FL03
 */
-#[cfg(feature = "clob")]
-use crate::Side;
 use alloc::string::{String, ToString};
 #[cfg(feature = "clob")]
-use polymarket::clob::types::{AssetType, Side as PmSide};
+use polymarket::clob::types::AssetType;
 
 /// Typed order-type discriminant for Axiom CLOB orders.
 ///
@@ -84,6 +82,15 @@ impl From<String> for OrderType {
 }
 
 /// A Polymarket order request — the payload sent to the CLOB to place a trade.
+///
+/// Outcome identity is carried by `token_id`; `side` is only the BUY/SELL
+/// action. Passing an outcome where an action is required does not compile:
+///
+/// ```compile_fail
+/// use rspm::{OrderReq, Side};
+///
+/// let _ = OrderReq::new("no-token", 0.5, 1.0, Side::No);
+/// ```
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 pub struct OrderReq {
@@ -93,13 +100,13 @@ pub struct OrderReq {
     pub price: f64,
     /// Order size in shares (positive, non-zero).
     pub size: f64,
-    /// Order direction: YES (buy) or NO (sell).
-    pub side: crate::Side,
+    /// Trade action on the outcome token: BUY or SELL.
+    pub side: crate::ClobSide,
 }
 
 impl OrderReq {
     /// Construct a new order request.
-    pub fn new(token_id: impl ToString, price: f64, size: f64, side: crate::Side) -> Self {
+    pub fn new(token_id: impl ToString, price: f64, size: f64, side: crate::ClobSide) -> Self {
         Self {
             token_id: token_id.to_string(),
             price,
@@ -112,16 +119,6 @@ impl OrderReq {
     #[cfg(feature = "clob")]
     pub fn asset_type(&self) -> AssetType {
         AssetType::Unknown(self.token_id.clone())
-    }
-}
-
-#[cfg(feature = "clob")]
-impl From<Side> for PmSide {
-    fn from(side: Side) -> Self {
-        match side {
-            Side::Yes => Self::Buy,
-            Side::No => Self::Sell,
-        }
     }
 }
 
@@ -218,7 +215,7 @@ mod tests {
         assert_eq!(OrderType::default(), OrderType::GtcMaker);
     }
 
-    #[cfg(feature = "serde")]
+    #[cfg(feature = "json")]
     #[test]
     fn order_type_serde_round_trip() {
         // Each variant ↔ wire string

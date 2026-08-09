@@ -187,9 +187,11 @@ fn page_invariants_accept_both_terminal_forms_and_reject_gaps() {
         let body = format!(r#"{{"data":[],"next_cursor":"{terminal}","limit":100,"count":0}}"#);
         AuthenticatedTradePage::decode_json(body.as_bytes()).expect("valid terminal page");
     }
-    let populated = br#"{"data":[{"id":"trade","taker_order_id":"order","market":"0x0000000000000000000000000000000000000000000000000000000000000000","asset_id":"1","side":"BUY","size":"1","fee_rate_bps":"0","price":"0.5","status":"CONFIRMED","match_time":"1","last_update":"1","outcome":"YES","bucket_index":0,"owner":"ffffffff-ffff-ffff-ffff-ffffffffffff","maker_address":"0x0000000000000000000000000000000000000000","maker_orders":[],"trader_side":"TAKER"}],"next_cursor":"","limit":100,"count":1}"#;
-    AuthenticatedTradePage::decode_json(populated)
+    let populated = br#"{"data":[{"id":"trade","taker_order_id":"order","market":"0x0000000000000000000000000000000000000000000000000000000000000000","asset_id":"1","side":"BUY","size":"1","fee_rate_bps":"0","price":"0.5","status":"CONFIRMED","match_time":"1","last_update":"1","outcome":"NO","bucket_index":0,"owner":"ffffffff-ffff-ffff-ffff-ffffffffffff","maker_address":"0x0000000000000000000000000000000000000000","maker_orders":[],"trader_side":"TAKER"}],"next_cursor":"","limit":100,"count":1}"#;
+    let populated = AuthenticatedTradePage::decode_json(populated)
         .expect("nonempty final page with empty cursor is terminal");
+    assert_eq!(populated.data[0].outcome, "NO");
+    assert_eq!(populated.data[0].side, AuthenticatedVenueSide::Buy);
     for body in [
         br#"{"data":[],"next_cursor":"MTAw","limit":100,"count":0}"#.as_slice(),
         br#"{"data":[],"next_cursor":"not a cursor","limit":100,"count":0}"#.as_slice(),

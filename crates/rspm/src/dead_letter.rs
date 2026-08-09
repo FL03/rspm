@@ -29,6 +29,8 @@
 use alloc::string::{String, ToString};
 use core::time::Duration;
 
+use crate::{ClobSide, Side};
+
 // ── DeadLetterRecord ─────────────────────────────────────────────────────────
 
 /// Everything needed to triage a submission whose retries were exhausted.
@@ -66,8 +68,10 @@ pub struct ClobSubmitContext<'a> {
     pub bot_name: Option<&'a str>,
     /// CLOB outcome token ID.
     pub token_id: &'a str,
-    /// Order side ("yes"/"no").
-    pub side: &'a str,
+    /// Outcome represented by `token_id`.
+    pub outcome: Side,
+    /// Trade action applied to the selected outcome token.
+    pub direction: ClobSide,
     /// Limit price.
     pub price: f64,
     /// Order size.
@@ -93,7 +97,8 @@ impl DeadLetterRecord {
             bot_name: ctx.bot_name.map(str::to_owned),
             payload: serde_json::json!({
                 "token_id": ctx.token_id,
-                "side": ctx.side,
+                "outcome": ctx.outcome,
+                "direction": ctx.direction,
                 "price": ctx.price,
                 "size": ctx.size,
             }),
@@ -163,7 +168,8 @@ mod tests {
             ClobSubmitContext {
                 bot_name: Some("lag"),
                 token_id: "123456789",
-                side: "yes",
+                outcome: Side::Yes,
+                direction: ClobSide::Sell,
                 price: 0.62,
                 size: 10.0,
             },
@@ -184,7 +190,8 @@ mod tests {
         assert!(record.exhausted_reason.contains("3 attempt"));
         assert!(record.exhausted_reason.contains("rate limited"));
         assert_eq!(record.payload["token_id"], "123456789");
-        assert_eq!(record.payload["side"], "yes");
+        assert_eq!(record.payload["outcome"], "YES");
+        assert_eq!(record.payload["direction"], "SELL");
         assert!((record.payload["price"].as_f64().unwrap() - 0.62).abs() < f64::EPSILON);
         assert!((record.payload["size"].as_f64().unwrap() - 10.0).abs() < f64::EPSILON);
     }
@@ -195,7 +202,8 @@ mod tests {
             ClobSubmitContext {
                 bot_name: None,
                 token_id: "999",
-                side: "no",
+                outcome: Side::No,
+                direction: ClobSide::Buy,
                 price: 0.40,
                 size: 5.0,
             },
@@ -206,6 +214,8 @@ mod tests {
         assert_eq!(record.bot_name, None);
         assert_eq!(record.retry_after_secs, None);
         assert_eq!(record.attempts, 1);
+        assert_eq!(record.payload["outcome"], "NO");
+        assert_eq!(record.payload["direction"], "BUY");
     }
 
     #[test]

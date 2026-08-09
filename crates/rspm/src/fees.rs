@@ -286,7 +286,7 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "serde")]
+    #[cfg(feature = "json")]
     #[test]
     fn serde_round_trip_preserves_metadata_schedule() {
         let calculator = FeeCalculator::from_market_metadata(Decimal::new(7, 2), 2)

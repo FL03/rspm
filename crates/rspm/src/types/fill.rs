@@ -3,7 +3,7 @@
     Created At: 2026.03.17:19:46:41
     Contrib: @FL03
 */
-use crate::Side;
+use crate::{ClobSide, Side};
 use alloc::string::String;
 use core::fmt;
 
@@ -12,8 +12,19 @@ use core::fmt;
 /// Polymarket currently charges 2 bps (0.02%) on each matched trade.
 const TAKER_FEE_RATE: f64 = 0.0002;
 
-/// Result of an order submission.
-#[derive(Clone, Debug, Default, PartialEq, PartialOrd)]
+/// An order-execution result for one action on one prediction-market outcome token.
+///
+/// `outcome` and `action` are independent: YES/NO identifies the token, while
+/// BUY/SELL identifies what the order did to that token. All four combinations
+/// are valid.
+///
+/// A fill records transaction `notional`, not realized profit or loss. In
+/// particular, a SELL fill's PnL requires the position's cost basis and cannot
+/// be inferred from the fill alone.
+///
+/// `Fill` intentionally has no [`Default`] implementation: callers must name
+/// both axes at construction time.
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -27,14 +38,19 @@ pub struct Fill {
     pub status: String,
     /// Asset or market slug this fill is for.
     pub asset: String,
-    /// Which side of the market was traded.
-    pub side: Side,
+    /// Outcome token traded: YES or NO.
+    pub outcome: Side,
+    /// Trade action applied to the outcome token: BUY or SELL.
+    pub action: ClobSide,
     /// Fill price per token.
     pub price: f64,
     /// Number of tokens filled.
     pub size: f64,
-    /// Total cost of the fill in USD (`price × size`).
-    pub cost: f64,
+    /// Direction-neutral fill notional in USD (`price × size`).
+    ///
+    /// This is cash paid before fees for a BUY and gross proceeds before fees
+    /// for a SELL. It is not profit or loss.
+    pub notional: f64,
     /// Unix timestamp (seconds) when the fill was reported.
     pub timestamp: i64,
 }
@@ -42,21 +58,38 @@ pub struct Fill {
 impl Fill {
     /// Construct a new [`Fill`] from its constituent fields.
     ///
-    /// `cost` is computed automatically as `price × size`.
+    /// `notional` is computed automatically as `price × size`. `outcome` and
+    /// `action` must both be supplied because neither can be inferred from the
+    /// other.
     ///
     /// # Examples
     ///
     /// ```rust
-    /// use rspm::types::{Fill, Side};
+    /// use rspm::types::{ClobSide, Fill, Side};
     ///
-    /// let fill = Fill::new("ord-001", "filled", "btc-sprint", Side::Yes, 0.60, 20.0, 1_700_000_000);
-    /// assert_eq!(fill.cost, 12.0);
+    /// let fill = Fill::new(
+    ///     "ord-001",
+    ///     "filled",
+    ///     "btc-sprint",
+    ///     Side::No,
+    ///     ClobSide::Buy,
+    ///     0.40,
+    ///     20.0,
+    ///     1_700_000_000,
+    /// );
+    /// assert_eq!(fill.outcome, Side::No);
+    /// assert_eq!(fill.action, ClobSide::Buy);
+    /// assert_eq!(fill.notional, 8.0);
     /// ```
+    // All non-derived fields are required, and both typed axes must stay in
+    // the signature so neither can be inferred from the other.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         order_id: impl Into<String>,
         status: impl Into<String>,
         asset: impl Into<String>,
-        side: Side,
+        outcome: Side,
+        action: ClobSide,
         price: f64,
         size: f64,
         timestamp: i64,
@@ -65,10 +98,11 @@ impl Fill {
             order_id: order_id.into(),
             status: status.into(),
             asset: asset.into(),
-            side,
+            outcome,
+            action,
             price,
             size,
-            cost: price * size,
+            notional: price * size,
             timestamp,
         }
     }
@@ -78,61 +112,22 @@ impl Fill {
         self.status.eq_ignore_ascii_case("filled")
     }
 
-    /// Returns `true` when this was a YES-side fill.
-    pub fn is_buy(&self) -> bool {
-        self.side == Side::Yes
+    /// Returns `true` when this fill traded the YES outcome token.
+    pub fn is_yes(&self) -> bool {
+        self.outcome == Side::Yes
     }
 
-    /// Returns `true` when this was a NO-side fill.
-    pub fn is_sell(&self) -> bool {
-        self.side == Side::No
-    }
-
-    /// Gross profit or loss on the fill, assuming binary payout at 1.0.
-    ///
-    /// For a YES fill that wins: `(1.0 − price) × size`.
-    /// For a YES fill that loses: `-price × size`.
-    ///
-    /// This method computes the *potential* PnL assuming resolution at 1.0.
-    /// Pass the actual resolved payout if it differs.
-    ///
-    /// ```rust
-    /// use rspm::types::{Fill, Side};
-    ///
-    /// let fill = Fill::new("o1", "filled", "mkt", Side::Yes, 0.60, 10.0, 0);
-    /// // If YES wins: payout = 1.0 * 10 = 10, cost = 6, PnL = 4
-    /// assert!((fill.profit_loss_if_win() - 4.0).abs() < 1e-9);
-    /// ```
-    pub fn profit_loss_if_win(&self) -> f64 {
-        (1.0 - self.price) * self.size
-    }
-
-    /// Loss if the fill resolves against the position.
-    ///
-    /// For a YES fill that loses, the entire `cost` is forfeited.
-    pub fn profit_loss_if_lose(&self) -> f64 {
-        -self.cost
+    /// Returns `true` when this fill traded the NO outcome token.
+    pub fn is_no(&self) -> bool {
+        self.outcome == Side::No
     }
 
     /// Approximate taker fee for this fill.
     ///
-    /// Uses `TAKER_FEE_RATE` applied to the fill cost.
+    /// Uses `TAKER_FEE_RATE` applied to the fill notional. This is a transaction
+    /// fee, not a position-level PnL calculation.
     pub fn fee(&self) -> f64 {
-        self.cost * TAKER_FEE_RATE
-    }
-
-    /// Net return if the trade wins, after deducting the taker fee.
-    ///
-    /// `profit_loss_if_win() − fee()`
-    pub fn net_return_if_win(&self) -> f64 {
-        self.profit_loss_if_win() - self.fee()
-    }
-
-    /// Expected value of this fill given an estimated win probability `p_win`.
-    ///
-    /// `EV = p_win * profit_loss_if_win() + (1 - p_win) * profit_loss_if_lose() - fee()`
-    pub fn expected_value(&self, p_win: f64) -> f64 {
-        p_win * self.profit_loss_if_win() + (1.0 - p_win) * self.profit_loss_if_lose() - self.fee()
+        self.notional * TAKER_FEE_RATE
     }
 }
 
@@ -140,13 +135,14 @@ impl fmt::Display for Fill {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Fill(id={id} {asset} {side} p={price:.4} sz={size:.2} cost={cost:.2} [{status}])",
+            "Fill(id={id} asset={asset} outcome={outcome} action={action} p={price:.4} sz={size:.2} notional={notional:.2} [{status}])",
             id = self.order_id,
             asset = self.asset,
-            side = self.side,
+            outcome = self.outcome,
+            action = self.action,
             price = self.price,
             size = self.size,
-            cost = self.cost,
+            notional = self.notional,
             status = self.status,
         )
     }
@@ -156,22 +152,43 @@ impl fmt::Display for Fill {
 mod tests {
     use super::*;
 
+    // [REGRESSION] A default would silently collapse the two required axes to
+    // YES + BUY instead of making callers choose both values.
+    static_assertions::assert_not_impl_any!(Fill: Default);
+
     fn sample_fill() -> Fill {
         Fill::new(
             "ord-001",
             "filled",
             "btc-sprint",
             Side::Yes,
+            ClobSide::Buy,
             0.60,
             20.0,
             1_700_000_000,
         )
     }
 
+    fn fill_with_axes(outcome: Side, action: ClobSide) -> Fill {
+        Fill::new(
+            "ord-axis",
+            "filled",
+            "btc-sprint",
+            outcome,
+            action,
+            0.50,
+            10.0,
+            1_700_000_000,
+        )
+    }
+
     #[test]
-    fn cost_is_price_times_size() {
-        let fill = sample_fill();
-        assert!((fill.cost - 12.0).abs() < 1e-9);
+    fn notional_is_price_times_size_for_either_action() {
+        let buy = sample_fill();
+        let sell = fill_with_axes(Side::Yes, ClobSide::Sell);
+
+        assert!((buy.notional - 12.0).abs() < 1e-9);
+        assert!((sell.notional - 5.0).abs() < 1e-9);
     }
 
     #[test]
@@ -179,59 +196,95 @@ mod tests {
         let fill = sample_fill();
         assert!(fill.is_filled());
 
-        let partial = Fill::new("ord-002", "partial", "btc-sprint", Side::Yes, 0.55, 5.0, 0);
+        let partial = Fill::new(
+            "ord-002",
+            "partial",
+            "btc-sprint",
+            Side::Yes,
+            ClobSide::Buy,
+            0.55,
+            5.0,
+            0,
+        );
         assert!(!partial.is_filled());
     }
 
     #[test]
-    fn buy_sell_flags() {
-        let yes_fill = sample_fill();
-        assert!(yes_fill.is_buy());
-        assert!(!yes_fill.is_sell());
+    fn outcome_flags_do_not_claim_a_trade_action() {
+        let yes_sell = fill_with_axes(Side::Yes, ClobSide::Sell);
+        assert!(yes_sell.is_yes());
+        assert!(!yes_sell.is_no());
+        assert_eq!(yes_sell.action, ClobSide::Sell);
 
-        let no_fill = Fill::new("ord-003", "filled", "btc-sprint", Side::No, 0.40, 10.0, 0);
-        assert!(no_fill.is_sell());
-        assert!(!no_fill.is_buy());
+        let no_buy = fill_with_axes(Side::No, ClobSide::Buy);
+        assert!(no_buy.is_no());
+        assert!(!no_buy.is_yes());
+        assert_eq!(no_buy.action, ClobSide::Buy);
+    }
+
+    /// [REGRESSION][EVAL] BUY NO and SELL YES must remain distinct, valid
+    /// fills; neither axis may be derived from or overwrite the other.
+    #[test]
+    fn outcome_and_action_form_the_full_cartesian_product() {
+        let fills = [
+            fill_with_axes(Side::Yes, ClobSide::Buy),
+            fill_with_axes(Side::Yes, ClobSide::Sell),
+            fill_with_axes(Side::No, ClobSide::Buy),
+            fill_with_axes(Side::No, ClobSide::Sell),
+        ];
+        let axes = fills.each_ref().map(|fill| (fill.outcome, fill.action));
+
+        assert_eq!(
+            axes,
+            [
+                (Side::Yes, ClobSide::Buy),
+                (Side::Yes, ClobSide::Sell),
+                (Side::No, ClobSide::Buy),
+                (Side::No, ClobSide::Sell),
+            ]
+        );
+
+        let buy_no = &fills[2];
+        assert!(buy_no.is_no());
+        assert_eq!(buy_no.action, ClobSide::Buy);
+
+        let sell_yes = &fills[1];
+        assert!(sell_yes.is_yes());
+        assert_eq!(sell_yes.action, ClobSide::Sell);
     }
 
     #[test]
-    fn profit_loss_if_win() {
-        // YES at 0.60, size 20: win PnL = (1 - 0.60) * 20 = 8.0
-        let fill = sample_fill();
-        assert!((fill.profit_loss_if_win() - 8.0).abs() < 1e-9);
+    fn fee_uses_notional_for_either_action() {
+        let buy = fill_with_axes(Side::No, ClobSide::Buy);
+        let sell = fill_with_axes(Side::No, ClobSide::Sell);
+
+        assert!(buy.fee() >= 0.0);
+        assert_eq!(buy.fee(), sell.fee());
     }
 
     #[test]
-    fn profit_loss_if_lose_equals_negative_cost() {
-        let fill = sample_fill();
-        assert!((fill.profit_loss_if_lose() + fill.cost).abs() < 1e-9);
+    fn display_names_both_axes() {
+        assert_eq!(
+            sample_fill().to_string(),
+            "Fill(id=ord-001 asset=btc-sprint outcome=YES action=BUY p=0.6000 sz=20.00 notional=12.00 [filled])"
+        );
+
+        let sell_yes = fill_with_axes(Side::Yes, ClobSide::Sell).to_string();
+        assert!(sell_yes.contains("outcome=YES"));
+        assert!(sell_yes.contains("action=SELL"));
     }
 
+    #[cfg(feature = "json")]
     #[test]
-    fn fee_is_nonnegative() {
-        let fill = sample_fill();
-        assert!(fill.fee() >= 0.0);
-    }
+    fn serde_preserves_outcome_and_action_independently() {
+        let buy_no = serde_json::to_value(fill_with_axes(Side::No, ClobSide::Buy))
+            .expect("BUY NO fill should serialize");
+        assert_eq!(buy_no["outcome"], "NO");
+        assert_eq!(buy_no["action"], "BUY");
 
-    #[test]
-    fn net_return_if_win_less_than_gross() {
-        let fill = sample_fill();
-        assert!(fill.net_return_if_win() <= fill.profit_loss_if_win());
-    }
-
-    #[test]
-    fn expected_value_at_certainty() {
-        let fill = sample_fill();
-        // p_win = 1.0 → EV = gross PnL − fee
-        let ev = fill.expected_value(1.0);
-        assert!((ev - fill.net_return_if_win()).abs() < 1e-9);
-    }
-
-    #[test]
-    fn display_format() {
-        let s = sample_fill().to_string();
-        assert!(s.contains("Fill("));
-        assert!(s.contains("ord-001"));
-        assert!(s.contains("YES"));
+        let sell_yes = serde_json::to_value(fill_with_axes(Side::Yes, ClobSide::Sell))
+            .expect("SELL YES fill should serialize");
+        assert_eq!(sell_yes["outcome"], "YES");
+        assert_eq!(sell_yes["action"], "SELL");
     }
 }

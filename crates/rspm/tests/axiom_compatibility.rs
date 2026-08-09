@@ -56,3 +56,14 @@ fn authenticated_websocket_types_remain_available_under_clob() {
     type_is_public::<rspm::clob::AuthenticatedUserWsConfig>();
     type_is_public::<rspm::clob::AuthenticatedUserWsState>();
 }
+
+#[test]
+fn outcome_and_order_action_types_remain_distinct_at_the_crate_root() {
+    type_is_public::<rspm::Side>();
+    type_is_public::<rspm::ClobSide>();
+    type_is_public::<rspm::OrderReq>();
+
+    let request = rspm::OrderReq::new("no-token", 0.5, 1.0, rspm::ClobSide::Buy);
+    let action: rspm::ClobSide = request.side;
+    assert_eq!(action, rspm::ClobSide::Buy);
+}

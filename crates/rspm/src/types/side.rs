@@ -3,7 +3,6 @@
     Created At: 2026.03.17:19:38:22
     Contrib: @FL03
 */
-use polymarket::clob::types::Side as ClobSide;
 /// Side of a binary outcome prediction market (YES or NO).
 ///
 /// ## Parsing
@@ -66,9 +65,9 @@ impl core::str::FromStr for Side {
     type Err = strum::ParseError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        if value.eq_ignore_ascii_case("yes") || value.eq_ignore_ascii_case("buy") {
+        if value.eq_ignore_ascii_case("yes") {
             Ok(Self::Yes)
-        } else if value.eq_ignore_ascii_case("no") || value.eq_ignore_ascii_case("sell") {
+        } else if value.eq_ignore_ascii_case("no") {
             Ok(Self::No)
         } else {
             Err(strum::ParseError::VariantNotFound)
@@ -109,28 +108,15 @@ impl Side {
             Self::No => Self::Yes,
         }
     }
-    /// Alias for [`invert`](Self::invert) — returns the opposite side.
-    ///
-    /// Provided for callers using the conventional buy/sell vocabulary.
+    /// Alias for [`invert`](Self::invert) — returns the opposite outcome.
     pub fn opposite(self) -> Self {
         self.invert()
-    }
-    /// Returns `true` when this is the YES (buy) side.
-    ///
-    /// Note: `strum::EnumIs` already generates `is_yes()` and `is_no()` methods.
-    /// This method is an explicit alias with a conventional trading name.
-    pub fn is_buy(self) -> bool {
-        matches!(self, Self::Yes)
-    }
-    /// Returns `true` when this is the NO (sell) side.
-    pub fn is_sell(self) -> bool {
-        matches!(self, Self::No)
     }
     /// Lowercase database string for the side — used where a CHECK constraint
     /// requires lowercase (e.g. `positions_side_check` on `axiom.positions`).
     ///
-    /// CLOB API still requires uppercase (`Display` → "YES"/"NO"). This method
-    /// is additive and does NOT change `Display` behaviour.
+    /// Serialized outcome values remain uppercase (`Display` → "YES"/"NO").
+    /// This method is additive and does not change `Display` behavior.
     pub const fn as_db_str(self) -> &'static str {
         match self {
             Self::Yes => "yes",
@@ -151,17 +137,6 @@ impl From<bool> for Side {
 impl From<Side> for bool {
     fn from(value: Side) -> Self {
         matches!(value, Side::Yes)
-    }
-}
-
-#[cfg(feature = "clob")]
-impl From<ClobSide> for Side {
-    fn from(value: ClobSide) -> Self {
-        match value {
-            ClobSide::Buy => Self::Yes,
-            ClobSide::Sell => Self::No,
-            _ => Self::No,
-        }
     }
 }
 
@@ -223,14 +198,6 @@ mod tests {
     }
 
     #[test]
-    fn is_buy_and_is_sell() {
-        assert!(Side::Yes.is_buy());
-        assert!(!Side::Yes.is_sell());
-        assert!(Side::No.is_sell());
-        assert!(!Side::No.is_buy());
-    }
-
-    #[test]
     fn strum_enumis_is_yes_is_no() {
         // strum::EnumIs generates these automatically
         assert!(Side::Yes.is_yes());
@@ -278,29 +245,29 @@ mod tests {
     }
 
     #[test]
-    fn from_str_case_insensitive() {
+    fn from_str_accepts_only_outcome_vocabulary() {
         assert_eq!(Side::from_str("yes").unwrap(), Side::Yes);
         assert_eq!(Side::from_str("YES").unwrap(), Side::Yes);
         assert_eq!(Side::from_str("Yes").unwrap(), Side::Yes);
-        assert_eq!(Side::from_str("buy").unwrap(), Side::Yes);
-        assert_eq!(Side::from_str("BUY").unwrap(), Side::Yes);
         assert_eq!(Side::from_str("no").unwrap(), Side::No);
         assert_eq!(Side::from_str("NO").unwrap(), Side::No);
         assert_eq!(Side::from_str("No").unwrap(), Side::No);
-        assert_eq!(Side::from_str("sell").unwrap(), Side::No);
-        assert_eq!(Side::from_str("SELL").unwrap(), Side::No);
+        for action in ["buy", "BUY", "sell", "SELL"] {
+            assert!(
+                Side::from_str(action).is_err(),
+                "trade action must not decode as an outcome: {action}"
+            );
+        }
         assert!(Side::from_str("unknown").is_err());
     }
 
     /// #2418 regression pin — INVERTED from the test that previously pinned the
     /// `serde(untagged)` null-collapse as intentional. Under `untagged`, BOTH
     /// unit variants serialized to JSON `null` and `null` deserialized to
-    /// `Yes` (the first/#[default] variant): a silent NO→YES direction
-    /// inversion at every JSON boundary — on the type that is the `side`
-    /// field of the canonical `Order` submitted to the CLOB. Tagged strings
-    /// must round-trip, the lowercase aliases must be honored, and `null`
-    /// must FAIL LOUD, never coerce to a direction.
-    #[cfg(feature = "serde")]
+    /// `Yes` (the first/#[default] variant): a silent NO→YES outcome
+    /// inversion at every JSON boundary. Tagged strings must round-trip, the
+    /// lowercase aliases must be honored, and `null` must fail loudly.
+    #[cfg(feature = "json")]
     #[test]
     fn serde_side_round_trips_tagged_strings_and_rejects_null() {
         // Canonical serialization: UPPERCASE tagged strings.
@@ -317,12 +284,12 @@ mod tests {
             assert_eq!(serde_json::from_str::<Side>(json).unwrap(), side);
         }
 
-        // null must never deserialize into a trade direction (#2418).
+        // null must never deserialize into a market outcome (#2418).
         assert!(
             serde_json::from_str::<Side>("null").is_err(),
             "null must never coerce to a Side"
         );
-        // BUY/SELL spellings remain FromStr-only, not serde.
+        // Trade-action vocabulary is invalid on the outcome axis.
         assert!(serde_json::from_str::<Side>("\"buy\"").is_err());
         assert!(serde_json::from_str::<Side>("\"sell\"").is_err());
     }

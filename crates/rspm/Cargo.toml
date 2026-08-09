@@ -74,6 +74,9 @@ url = { optional = true, workspace = true }
 # wasm
 wasm-bindgen = { optional = true, workspace = true }
 
+[dev-dependencies]
+static_assertions = { workspace = true }
+
 [features]
 default = [
   "async",

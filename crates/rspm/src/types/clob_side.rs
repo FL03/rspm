@@ -12,7 +12,7 @@
 //! |------|----------|---------|
 //! | [`Side`](crate::types::Side) | `Yes` / `No` | The market OUTCOME a token pays out on. |
 //! | [`ClobSide`] (this type) | `Buy` / `Sell` | The DIRECTION of an order placed on the CLOB. |
-//! | `polymarket::clob::types::Side` (external SDK) | `Buy` / `Sell` | The wire-level order-direction type used by `polymarket_client_sdk_v2`; bridged privately in `types::side` via `From<ClobSide /* SDK */> for Side` for outcome conversions only — do not confuse with this crate's own [`ClobSide`]. |
+//! | `polymarket::clob::types::Side` (external SDK) | `Buy` / `Sell` | The wire-level order direction; [`ClobSide`] converts into it only at the SDK boundary. |
 //!
 //! A market outcome (`Side::Yes`/`Side::No`) is not the same axis as an order
 //! direction (`ClobSide::Buy`/`ClobSide::Sell`): a caller can BUY the NO token
@@ -124,6 +124,20 @@ impl ClobSide {
 // exactly `as_str()`'s output — no separate manual `impl Display` needed
 // (and none is provided, to avoid an E0119 conflict with the derive).
 
+/// Convert the canonical order action into the SDK's wire-level action.
+///
+/// Both types encode the same Buy/Sell axis. No conversion exists between
+/// [`ClobSide`] and the orthogonal Yes/No [`Side`](crate::types::Side).
+#[cfg(feature = "clob")]
+impl From<ClobSide> for polymarket::clob::types::Side {
+    fn from(side: ClobSide) -> Self {
+        match side {
+            ClobSide::Buy => Self::Buy,
+            ClobSide::Sell => Self::Sell,
+        }
+    }
+}
+
 // NOTE: `strum::EnumString` is NOT derived — see the comment above the derive
 // list. This manual impl mirrors `types::side::Side::from_str`.
 impl core::str::FromStr for ClobSide {
@@ -183,10 +197,9 @@ mod tests {
         assert_eq!(ClobSide::from_str("SELL").unwrap(), ClobSide::Sell);
         assert_eq!(ClobSide::from_str("Sell").unwrap(), ClobSide::Sell);
         assert!(ClobSide::from_str("unknown").is_err());
-        // Deliberately NOT accepted: market-outcome vocabulary. `ClobSide` is
-        // order-direction only; `Side::from_str` already accepts "buy"/"sell"
-        // as YES/NO aliases, but the reverse must not hold, or the two
-        // vocabularies collapse back into the ambiguity #2006 removes.
+        // Deliberately NOT accepted: market-outcome vocabulary. Neither axis
+        // accepts the other's words, so a caller must supply both outcome-token
+        // identity and trade action explicitly.
         assert!(ClobSide::from_str("yes").is_err());
         assert!(ClobSide::from_str("no").is_err());
     }
@@ -194,6 +207,15 @@ mod tests {
     #[test]
     fn default_is_buy() {
         assert_eq!(ClobSide::default(), ClobSide::Buy);
+    }
+
+    #[cfg(feature = "clob")]
+    #[test]
+    fn sdk_bridge_preserves_the_trade_action_axis() {
+        use polymarket::clob::types::Side as SdkSide;
+
+        assert_eq!(SdkSide::from(ClobSide::Buy), SdkSide::Buy);
+        assert_eq!(SdkSide::from(ClobSide::Sell), SdkSide::Sell);
     }
 
     /// [REGRESSION][EVAL] Authenticated transport and public CLOB APIs must
@@ -210,13 +232,11 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "serde")]
+    #[cfg(feature = "json")]
     #[test]
     fn serde_round_trip_is_tagged_uppercase_string() {
-        // Unlike `Side` (which serialises `untagged` as JSON `null` for a
-        // historical wire-format reason — see `types::side`), `ClobSide` uses
-        // a plain tagged string representation: `"BUY"` / `"SELL"`. This is
-        // the more useful representation at order-direction API boundaries.
+        // Both axes use tagged strings, but each accepts only its own
+        // vocabulary. `ClobSide` therefore serializes as `"BUY"` / `"SELL"`.
         // NOTE: `ClobTickRow.side` (`axiom::store::qdb::ClobTickRow`) does
         // NOT use this vocabulary — it stores the market-OUTCOME label
         // (`"yes"`/`"no"`) instead (GH #2039); see `as_str`'s doc above.
