@@ -38,6 +38,16 @@ name = "empty_fee_rate_response"
 path = "tests/empty_fee_rate_response.rs"
 required-features = ["clob", "json"]
 
+[[test]]
+name = "wallet_address_contract"
+path = "tests/wallet_address_contract.rs"
+required-features = ["json"]
+
+[[test]]
+name = "workspace_architecture_contract"
+path = "tests/workspace_architecture_contract.rs"
+required-features = ["alloc"]
+
 [dependencies]
 # error
 anyhow = { workspace = true }

@@ -23,6 +23,15 @@ _**Warning: The library is currently in the early stages of development and is n
 - `serde`: enables serialization using [`serde`](https://serde.rs/).
 
 The default profile enables `clob`, `gamma`, async support, ECDSA, and `std`.
+The workspace deliberately contains one canonical production package, `rspm`.
+Generated component placeholders are not public architecture and cannot ship;
+future crate extraction requires a real dependency graph and an API-compatible
+umbrella migration.
+
+`WalletAddress` is a closed value object. It accepts exactly lowercase `0x`
+plus 40 ASCII hexadecimal digits, normalizes hexadecimal casing, and applies
+that same validation during deserialization.
+
 RSPM is path-only while `publish = false`. From a workspace clone, consumers
 that need only deterministic market primitives can use:
 

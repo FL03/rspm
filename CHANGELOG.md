@@ -22,6 +22,7 @@ An active record detailing the various changes for a corresponding version.
 - Changed `std` to include the SDK-free `alloc` primitive closure so isolated `sdk` builds have the allocation types they require.
 - Changed RSPM's `tracing` feature to weak-forward SDK tracing when the optional SDK is active, preserving SDK telemetry without making tracing activate the SDK.
 - Changed `clob` to activate `sha2` directly for its credential and protocol-identity hashing. The SDK-only, Gamma-only, and market-primitives profiles remain independent of that RSPM dependency.
+- Closed `WalletAddress` as a validated value object. Construction and deserialization now require exactly lowercase `0x` plus 40 ASCII hexadecimal digits, normalize hexadecimal casing, and expose no default, public-field, or mutable-string bypass.
 
 ### Removed
 
@@ -29,6 +30,7 @@ An active record detailing the various changes for a corresponding version.
 - Removed BUY/SELL aliases from outcome parsing and removed outcome-level `is_buy`/`is_sell` helpers.
 - Removed `Fill::default` and basis-free fill PnL helpers. A SELL fill's realized PnL requires position cost basis and cannot be inferred from one fill.
 - Removed the `frame-identity` feature, Axiom-specific private-frame evidence key and payload digest types/functions/root exports, and `AuthenticatedUserRawFrame::private_frame_evidence_key_v1`. RSPM retains only the exact raw payload and authenticated transport receipt getters; downstream contracts own evidence composition.
+- Removed the generated `rspm-core`, `rspm-types`, `rspm-gamma`, and `rspm-clob` placeholder packages. They contained only `add(2, 2)` scaffolding and no contracts or dependency graph; the canonical implementation remains the API-compatible `rspm` crate until a real versioned extraction is designed.
 
 ### Migration
 

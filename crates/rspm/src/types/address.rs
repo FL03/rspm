@@ -5,36 +5,43 @@
 */
 use alloc::string::{String, ToString};
 
-/// A type defining compatible wallet or network addresses for on-chain entities.
-#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+const WALLET_ADDRESS_HEX_LEN: usize = 40;
+const WALLET_ADDRESS_LEN: usize = WALLET_ADDRESS_HEX_LEN + 2;
+
+/// A validated, canonical Ethereum wallet address.
+///
+/// Construction accepts exactly `0x` followed by 40 ASCII hexadecimal digits.
+/// Hexadecimal digits are normalized to lowercase so equality, ordering, and
+/// hashing cannot disagree solely because of address casing.
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 #[cfg_attr(
     feature = "serde",
-    derive(serde::Deserialize, serde::Serialize),
+    derive(serde::Serialize),
     serde(deny_unknown_fields, transparent)
 )]
 #[repr(transparent)]
-pub struct WalletAddress(pub String);
+pub struct WalletAddress(String);
 
 impl WalletAddress {
+    /// Parse and validate a wallet address.
     pub fn from_str<T>(value: T) -> Result<Self, crate::Error>
     where
         T: AsRef<str>,
     {
         core::str::FromStr::from_str(value.as_ref())
     }
-    /// returns a reference to the wallet address as a `str`
+
+    /// Return the canonical wallet address as a string slice.
     pub fn as_str(&self) -> &str {
         &self.0
     }
-    /// returns an immutable reference to the string value of the address
+
+    /// Return an immutable reference to the canonical owned string.
     pub const fn get(&self) -> &String {
         &self.0
     }
 
-    pub const fn get_mut(&mut self) -> &mut String {
-        &mut self.0
-    }
-    /// consumes the current instance, returning the inner value
+    /// Consume the address and return its canonical owned string.
     pub fn value(self) -> String {
         self.0
     }
@@ -49,11 +56,31 @@ impl core::fmt::Display for WalletAddress {
 impl core::str::FromStr for WalletAddress {
     type Err = crate::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() != 42 || !s.starts_with("0x") {
-            return Err(crate::Error::InvalidAddress(s.to_string()));
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let Some(hex) = value.strip_prefix("0x") else {
+            return Err(crate::Error::InvalidAddress(value.to_string()));
+        };
+        if value.len() != WALLET_ADDRESS_LEN
+            || hex.len() != WALLET_ADDRESS_HEX_LEN
+            || !hex.bytes().all(|byte| byte.is_ascii_hexdigit())
+        {
+            return Err(crate::Error::InvalidAddress(value.to_string()));
         }
-        Ok(Self(s.to_string()))
+
+        let mut canonical = value.to_string();
+        canonical.make_ascii_lowercase();
+        Ok(Self(canonical))
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for WalletAddress {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = <String as serde::Deserialize>::deserialize(deserializer)?;
+        value.parse().map_err(serde::de::Error::custom)
     }
 }
 
