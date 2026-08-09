@@ -12,6 +12,7 @@ An active record detailing the various changes for a corresponding version.
 
 ### Changed
 
+- Inlined 126 private unit tests from seven source-side test modules into literal `#[cfg(test)] mod tests { ... }` blocks. RSPM keeps black-box tests under `crates/rspm/tests/`; no standalone test module or `#[path]` workaround remains below `src`.
 - Separated prediction-market outcome identity from CLOB trade action. `Side::{Yes, No}` now represents only the selected outcome token, while `ClobSide::{Buy, Sell}` represents only the action applied to that token.
 - Changed `OrderReq::side` and `OrderReq::new` to use `ClobSide`.
 - Changed `ClobClient::submit_fak` to accept `ClobSide`; the SDK-side conversion now occurs only inside RSPM and preserves BUY/SELL exactly.

@@ -86,7 +86,9 @@ url = { optional = true, workspace = true }
 wasm-bindgen = { optional = true, workspace = true }
 
 [dev-dependencies]
+proc-macro2 = { workspace = true }
 static_assertions = { workspace = true }
+syn = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync", "time"] }
 
 [features]

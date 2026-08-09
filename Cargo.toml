@@ -64,9 +64,11 @@ time = { default-features = false, version = "0.3" }
 # macros & utilities
 lazy_static = { version = "1" }
 paste = { version = "1" }
+proc-macro2 = { version = "1" }
 smart-default = { version = "0.7" }
 static_assertions = { version = "1" }
 strum = { default-features = false, features = ["derive"], version = "0.28" }
+syn = { features = ["full", "parsing", "visit"], version = "2" }
 # serialization
 schemars = { default-features = false, features = ["derive"], version = "1" }
 serde = { default-features = false, features = ["derive"], version = "1" }

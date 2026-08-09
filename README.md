@@ -202,6 +202,16 @@ removal criteria.
 
 ## Contributing
 
+### Rust test placement
+
+Keep private unit tests literally inline with the implementation in a
+`#[cfg(test)] mod tests { ... }` block. Put public, black-box behavior in
+`crates/rspm/tests/`. Never create a standalone test module below `src` and do
+not use `#[path]` as a test-layout workaround. RSPM intentionally rejects every
+source-side external-module `#[path]` override, rather than trying to infer why
+it exists. The standalone source-layout contract and Axiom's mutation-tested
+Shepherd gate enforce these boundaries.
+
 Pull requests are welcome. For major changes, please open an issue first
 to discuss what you would like to change.
 
