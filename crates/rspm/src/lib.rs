@@ -56,6 +56,7 @@ pub mod types {
     mod fill;
     mod market;
     mod order;
+    mod order_type;
     mod position;
     mod request;
     mod resolution;
@@ -76,6 +77,7 @@ pub mod types {
         pub use super::order::*;
         pub use super::position::*;
         pub use super::resolution::*;
+        pub use super::order_type::*;
         pub use super::response::*;
         pub use super::side::*;
         pub use super::tick_size::*;
