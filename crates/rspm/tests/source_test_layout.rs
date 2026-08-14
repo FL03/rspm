@@ -368,6 +368,29 @@ fn source_tree_contains_no_standalone_test_modules() {
     }
 }
 
+/// [REGRESSION][EVAL] Nightly's current atomic update API stays warning-free;
+/// strict clippy promotes a reintroduction of the deprecated spelling to an
+/// error before Axiom consumes this nested crate.
+#[test]
+fn source_tree_uses_current_atomic_update_api() {
+    let source_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src");
+    let sources = rust_sources(&source_root);
+    assert!(
+        !sources.is_empty(),
+        "RSPM source discovery must fail closed"
+    );
+
+    for path in sources {
+        let source = std::fs::read_to_string(&path)
+            .unwrap_or_else(|error| panic!("read {}: {error}", path.display()));
+        assert!(
+            !source.contains(".fetch_update("),
+            "deprecated atomic update API in {}; use `try_update`",
+            path.display()
+        );
+    }
+}
+
 #[test]
 fn semantic_scan_rejects_renamed_nested_raw_and_path_evasions() {
     for mutated in [
@@ -395,7 +418,7 @@ fn semantic_scan_rejects_renamed_nested_raw_and_path_evasions() {
 fn semantic_scan_accepts_inline_tests_and_production_cfg_alternatives() {
     for accepted in [
         "#[cfg(test)] mod tests { #[test] fn works() {} }",
-        "#[cfg(any(test, feature = \"serve\"))] mod service;",
+        "#[cfg(any(feature = \"serve\", feature = \"test-utils\"))] mod service;",
         "#[cfg(feature = \"serve\")] mod production;",
     ] {
         assert_eq!(

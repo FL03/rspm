@@ -175,7 +175,7 @@ fn checked_counter_increment(counter: &AtomicUsize, poisoned: &AtomicBool) -> bo
         return false;
     }
     if counter
-        .fetch_update(Ordering::AcqRel, Ordering::Acquire, |value| {
+        .try_update(Ordering::AcqRel, Ordering::Acquire, |value| {
             value.checked_add(1)
         })
         .is_err()
@@ -188,7 +188,7 @@ fn checked_counter_increment(counter: &AtomicUsize, poisoned: &AtomicBool) -> bo
 
 fn checked_counter_decrement(counter: &AtomicUsize, poisoned: &AtomicBool) -> bool {
     if counter
-        .fetch_update(Ordering::AcqRel, Ordering::Acquire, |value| {
+        .try_update(Ordering::AcqRel, Ordering::Acquire, |value| {
             value.checked_sub(1)
         })
         .is_err()

@@ -115,7 +115,7 @@ pub struct SubmissionAttemptAuthority {
 
 fn reserve_controller_identity(counter: &AtomicU64) -> crate::Result<u64> {
     counter
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |identity| {
+        .try_update(Ordering::Relaxed, Ordering::Relaxed, |identity| {
             (identity != 0).then(|| identity.checked_add(1)).flatten()
         })
         .map_err(|_| crate::Error::SubmissionControllerIdentityExhausted)
@@ -160,7 +160,7 @@ impl SubmissionController {
         if self
             .state
             .revocation_epoch
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |epoch| {
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |epoch| {
                 epoch.checked_add(1)
             })
             .is_err()
