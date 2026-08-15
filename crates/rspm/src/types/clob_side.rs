@@ -157,6 +157,7 @@ impl core::str::FromStr for ClobSide {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::string::ToString as _;
 
     #[test]
     fn invert_and_opposite_are_symmetric() {

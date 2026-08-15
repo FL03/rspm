@@ -125,6 +125,7 @@ impl From<polymarket::clob::ws::types::response::LastTradePrice> for ClobTrade {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::string::ToString as _;
 
     fn sample() -> ClobTrade {
         ClobTrade {

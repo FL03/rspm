@@ -116,6 +116,7 @@ impl fmt::Display for Resolution {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::string::ToString as _;
 
     fn win() -> Resolution {
         // YES position, YES won, entry 0.62, size 20, pnl = (1-0.62)*20 = 7.60

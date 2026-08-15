@@ -3,6 +3,9 @@
     Created At: 2026.03.17:19:38:22
     Contrib: @FL03
 */
+#[cfg(feature = "alloc")]
+use alloc::string::{String, ToString};
+
 /// Side of a binary outcome prediction market (YES or NO).
 ///
 /// ## Parsing
@@ -188,6 +191,7 @@ impl From<Side> for String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::format;
 
     #[test]
     fn invert_and_opposite_are_symmetric() {

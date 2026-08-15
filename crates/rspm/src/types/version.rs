@@ -4,6 +4,9 @@
     Contrib: @FL03
 */
 
+#[cfg(feature = "alloc")]
+use alloc::string::ToString;
+
 /// Protocol contract generation reported by the CLOB.
 #[derive(
     Clone,

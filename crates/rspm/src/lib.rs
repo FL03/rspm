@@ -105,6 +105,7 @@ mod utils {
     mod parse;
     #[cfg(all(feature = "sdk", feature = "serde"))]
     mod serialize;
+    #[cfg(feature = "std")]
     mod time;
     mod venue;
 
@@ -115,6 +116,7 @@ mod utils {
         pub use super::parse::*;
         #[cfg(all(feature = "sdk", feature = "serde"))]
         pub use super::serialize::*;
+        #[cfg(feature = "std")]
         pub use super::time::*;
         pub use super::venue::*;
     }

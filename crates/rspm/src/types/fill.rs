@@ -151,6 +151,7 @@ impl fmt::Display for Fill {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::string::ToString as _;
 
     // [REGRESSION] A default would silently collapse the two required axes to
     // YES + BUY instead of making callers choose both values.

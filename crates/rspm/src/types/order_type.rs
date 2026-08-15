@@ -121,6 +121,7 @@ impl From<String> for OrderType {
 #[cfg(test)]
 mod tests {
     use super::OrderType;
+    use alloc::string::ToString as _;
 
     // ── OrderType typed variant tests ───────────────────────────────────────
 

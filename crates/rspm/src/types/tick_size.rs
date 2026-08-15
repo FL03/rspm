@@ -5,9 +5,6 @@
 */
 //! Tick size constraints for Polymarket CLOB orders.
 
-#[cfg(not(feature = "std"))]
-use num_traits::Float as _;
-
 /// Valid tick sizes on the Polymarket CLOB.
 ///
 /// Orders must be priced at multiples of the market's tick size.
