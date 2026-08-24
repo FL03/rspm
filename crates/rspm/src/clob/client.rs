@@ -29,7 +29,7 @@ use polymarket::{
     clob::{
         Client, Config,
         types::{
-            AssetType, OrderType, Side as SdkSide, SignableOrder, SignatureType,
+            AssetType, OrderType, Side as SdkSide, SignableOrder, SignatureType, SignedOrder,
             request::{BalanceAllowanceRequest, OrderBookSummaryRequest},
             response::BalanceAllowanceResponse,
         },
@@ -168,6 +168,30 @@ pub struct ClobClient {
     /// and public position inventory.
     account_address: Address,
     signature_type: SignatureType,
+}
+
+const MAX_CLIENT_MARKER_BYTES: usize = 128;
+
+/// A signed CLOB order prepared without sending an order POST.
+#[derive(Clone, Debug)]
+pub struct PreparedClobOrder {
+    signed: SignedOrder,
+    client_marker: String,
+    provider_order_id: String,
+}
+
+impl PreparedClobOrder {
+    /// Return the durable internal correlation marker.
+    #[must_use]
+    pub fn client_marker(&self) -> &str {
+        &self.client_marker
+    }
+
+    /// Return the provider-native EIP-712 order identifier.
+    #[must_use]
+    pub fn provider_order_id(&self) -> &str {
+        &self.provider_order_id
+    }
 }
 
 // ── Shared retry envelope ───────────────────────────────────────────────────
@@ -622,6 +646,69 @@ impl ClobClient {
             "CLOB submission acquired exact protocol authority"
         );
         Ok((guard, permit))
+    }
+
+    async fn post_prepared_sdk(
+        &self,
+        guard: &AuthenticatedClientState,
+        permit: ProtocolSubmissionPermit,
+        attempt_authority: &SubmissionAttemptAuthority,
+        signed: SignedOrder,
+    ) -> core::result::Result<PostOrderOutcome, crate::ClobOperationError> {
+        let authority = guard
+            .protocol_authority
+            .ok_or(crate::ClobOperationError::ProtocolAuthorityRevoked)?;
+        let before_version = guard
+            .version()
+            .await
+            .map_err(|error| classify_operation_error(&error))?;
+        if authority != permit.authority
+            || signed.payload.version() != before_version
+            || before_version != authority.version().as_u32()
+            || !self.submission_gate().matches(permit)
+            || !attempt_authority.revalidate(self.submission_controller_binding, permit.authority)
+        {
+            self.submission_gate().quarantine(permit.authority);
+            return Err(crate::ClobOperationError::ProtocolAuthorityRevoked);
+        }
+        let posted = poll_transport_after_begin(
+            attempt_authority,
+            self.submission_controller_binding,
+            permit.authority,
+            guard.post_order_initial(signed),
+        )
+        .await
+        .map_err(|()| {
+            self.submission_gate().quarantine(permit.authority);
+            crate::ClobOperationError::SubmissionRevoked
+        })?;
+        let response = match posted {
+            Ok(response) => match classify_post_order_response(response) {
+                Ok(outcome) => Ok(outcome),
+                Err(()) => {
+                    self.submission_gate().mark_indeterminate(permit.authority);
+                    return Err(crate::ClobOperationError::PostSendIndeterminate);
+                }
+            },
+            Err(error) if post_response_is_ambiguous(&error) => {
+                self.submission_gate().mark_indeterminate(permit.authority);
+                return Err(crate::ClobOperationError::PostSendIndeterminate);
+            }
+            Err(error) => Err(classify_operation_error(&error)),
+        };
+        let after_version_matches = guard
+            .version()
+            .await
+            .is_ok_and(|after_version| after_version == before_version);
+        let permit_still_matches = self.submission_gate().matches(permit);
+        let response_revokes_authority = matches!(
+            response,
+            Err(crate::ClobOperationError::ProtocolAuthorityRevoked)
+        );
+        if response_revokes_authority || !after_version_matches || !permit_still_matches {
+            self.submission_gate().quarantine(permit.authority);
+        }
+        response
     }
 
     /// Sign and POST with the same client guard that built the order.
@@ -1098,6 +1185,180 @@ impl ClobClient {
     ///     .await;
     /// # }
     /// ```
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "these parameters preserve the three public prepare_* boundaries"
+    )]
+    async fn prepare_limit_order(
+        &self,
+        token_id: &str,
+        side: SdkSide,
+        price: f64,
+        size: f64,
+        order_type: OrderType,
+        client_marker: &str,
+    ) -> core::result::Result<PreparedClobOrder, crate::ClobOperationError> {
+        if client_marker.trim().is_empty() || client_marker.len() > MAX_CLIENT_MARKER_BYTES {
+            return Err(crate::ClobOperationError::InvalidRequest);
+        }
+        let tid =
+            parse_token_id(token_id).map_err(|_| crate::ClobOperationError::InvalidRequest)?;
+        let price_dec =
+            clob_price_decimal(price).map_err(|_| crate::ClobOperationError::InvalidRequest)?;
+        let size_dec =
+            clob_share_decimal(size).map_err(|_| crate::ClobOperationError::InvalidRequest)?;
+        let _submission = self.submission_serial.lock().await;
+        let (guard, permit) = self.submission_client().await?;
+        let post_only = matches!(order_type, OrderType::GTC);
+        let builder = guard
+            .limit_order()
+            .token_id(tid)
+            .price(price_dec)
+            .size(size_dec)
+            .side(side)
+            .order_type(order_type);
+        let signable = if post_only {
+            builder.post_only(true)
+        } else {
+            builder
+        }
+        .build()
+        .await
+        .map_err(|error| classify_operation_error(&error))?;
+        let signed = guard
+            .sign(&self.signer, signable)
+            .await
+            .map_err(|error| classify_operation_error(&error))?;
+        if !self.submission_gate().matches(permit) {
+            self.submission_gate().quarantine(permit.authority);
+            return Err(crate::ClobOperationError::ProtocolAuthorityRevoked);
+        }
+        let chain_id = self
+            .signer
+            .chain_id()
+            .ok_or(crate::ClobOperationError::InvalidRequest)?;
+        let provider_order_id = guard
+            .provider_order_id(&signed, chain_id)
+            .await
+            .map_err(|error| classify_operation_error(&error))?;
+        Ok(PreparedClobOrder {
+            signed,
+            client_marker: client_marker.to_owned(),
+            provider_order_id,
+        })
+    }
+
+    /// Prepare a fill-and-kill order without sending an order POST.
+    pub async fn prepare_fak(
+        &self,
+        token_id: &str,
+        side: ClobSide,
+        price: f64,
+        size: f64,
+        client_marker: &str,
+    ) -> core::result::Result<PreparedClobOrder, crate::ClobOperationError> {
+        self.prepare_limit_order(
+            token_id,
+            side.into(),
+            price,
+            size,
+            OrderType::FAK,
+            client_marker,
+        )
+        .await
+    }
+
+    /// Prepare a resting GTC maker buy without sending an order POST.
+    pub async fn prepare_gtc_buy(
+        &self,
+        token_id: &str,
+        price: f64,
+        size: f64,
+        client_marker: &str,
+    ) -> core::result::Result<PreparedClobOrder, crate::ClobOperationError> {
+        self.prepare_limit_order(
+            token_id,
+            SdkSide::Buy,
+            price,
+            size,
+            OrderType::GTC,
+            client_marker,
+        )
+        .await
+    }
+
+    /// Prepare a resting GTC maker sell without sending an order POST.
+    pub async fn prepare_gtc_sell(
+        &self,
+        token_id: &str,
+        price: f64,
+        size: f64,
+        client_marker: &str,
+    ) -> core::result::Result<PreparedClobOrder, crate::ClobOperationError> {
+        self.prepare_limit_order(
+            token_id,
+            SdkSide::Sell,
+            price,
+            size,
+            OrderType::GTC,
+            client_marker,
+        )
+        .await
+    }
+
+    /// Submit one prepared payload with bounded authorization-aware retries.
+    pub async fn submit_prepared<A, Authorization>(
+        &self,
+        order: PreparedClobOrder,
+        authorize_attempt: A,
+    ) -> core::result::Result<Option<String>, crate::ClobOperationError>
+    where
+        A: FnMut() -> Authorization,
+        Authorization: core::future::Future<Output = Option<SubmissionAttemptAuthority>>,
+    {
+        let expected_order_id = order.provider_order_id.clone();
+        let response = retry_post_order(
+            "submit_prepared",
+            crate::retry::RetryPolicy::default(),
+            authorize_attempt,
+            || self.submission_gate().permit().is_some(),
+            |attempt_authority| {
+                let signed = order.signed.clone();
+                let expected_order_id = expected_order_id.clone();
+                async move {
+                    let _submission = self.submission_serial.lock().await;
+                    let (guard, protocol_permit) = self.submission_client().await?;
+                    if !attempt_authority.revalidate(
+                        self.submission_controller_binding,
+                        protocol_permit.authority,
+                    ) {
+                        self.submission_gate().quarantine(protocol_permit.authority);
+                        return Err(crate::ClobOperationError::SubmissionRevoked);
+                    }
+                    match self
+                        .post_prepared_sdk(&guard, protocol_permit, &attempt_authority, signed)
+                        .await?
+                    {
+                        PostOrderOutcome::Accepted(order_id) if order_id == expected_order_id => {
+                            Ok(PostOrderOutcome::Accepted(order_id))
+                        }
+                        PostOrderOutcome::Accepted(_) => {
+                            Err(crate::ClobOperationError::PreparedOrderMismatch)
+                        }
+                        outcome => Ok(outcome),
+                    }
+                }
+            },
+        )
+        .await;
+        match response {
+            Ok(PostOrderOutcome::Accepted(order_id)) => Ok(Some(order_id)),
+            Ok(PostOrderOutcome::NotAccepted) => Ok(None),
+            Err(crate::ClobOperationError::NoMatch) => Ok(None),
+            Err(error) => Err(error),
+        }
+    }
+
     pub async fn submit_fak<A, Authorization>(
         &self,
         token_id: &str,

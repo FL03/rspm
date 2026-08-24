@@ -654,7 +654,7 @@ pub struct SignableOrder {
 }
 
 #[non_exhaustive]
-#[derive(Debug, Builder, PartialEq)]
+#[derive(Clone, Debug, Builder, PartialEq)]
 pub struct SignedOrder {
     pub payload: OrderPayload,
     #[builder(into)]

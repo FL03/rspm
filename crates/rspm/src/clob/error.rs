@@ -33,6 +33,9 @@ pub enum ClobOperationError {
     /// A fill-or-kill style order found no executable counterpart.
     #[error("CLOB order found no executable match")]
     NoMatch,
+    /// The accepted provider order identifier did not match the prepared EIP-712 identifier.
+    #[error("prepared CLOB order identifier did not match provider response")]
+    PreparedOrderMismatch,
     /// The venue rejected the operation without an executable no-match class.
     #[error("CLOB operation was rejected")]
     Rejected,
@@ -57,6 +60,7 @@ impl ClobOperationError {
             Self::InvalidRequest => "invalid_request",
             Self::Authentication => "authentication",
             Self::NoMatch => "no_match",
+            Self::PreparedOrderMismatch => "prepared_order_mismatch",
             Self::Rejected => "rejected",
             Self::RateLimited { .. } => "rate_limited",
             Self::Transport => "transport",

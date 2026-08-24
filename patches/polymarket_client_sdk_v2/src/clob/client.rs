@@ -1812,6 +1812,45 @@ impl<K: Kind> Client<Authenticated<K>> {
         })
     }
 
+    /// Compute the provider-native EIP-712 order identifier without sending the order.
+    pub async fn provider_order_id(&self, order: &SignedOrder, chain_id: u64) -> Result<String> {
+        let token_id = match &order.payload {
+            OrderPayload::V1(payload) => payload.order.tokenId,
+            OrderPayload::V2(payload) => payload.order.tokenId,
+        };
+        let neg_risk = self.neg_risk(token_id).await?.neg_risk;
+        let config = contract_config(chain_id, neg_risk)
+            .ok_or_else(|| Error::missing_contract_config(chain_id, neg_risk))?;
+        let hash = match &order.payload {
+            OrderPayload::V2(payload) => {
+                let exchange = config.exchange_v2.ok_or_else(|| {
+                    Error::validation(format!(
+                        "No V2 exchange contract configured for chain_id={chain_id}, neg_risk={neg_risk}"
+                    ))
+                })?;
+                let domain = Eip712Domain {
+                    name: ORDER_NAME,
+                    version: VERSION_V2,
+                    chain_id: Some(U256::from(chain_id)),
+                    verifying_contract: Some(exchange),
+                    ..Eip712Domain::default()
+                };
+                payload.order.eip712_signing_hash(&domain)
+            }
+            OrderPayload::V1(payload) => {
+                let domain = Eip712Domain {
+                    name: ORDER_NAME,
+                    version: VERSION_V1,
+                    chain_id: Some(U256::from(chain_id)),
+                    verifying_contract: Some(config.exchange),
+                    ..Eip712Domain::default()
+                };
+                payload.order.eip712_signing_hash(&domain)
+            }
+        };
+        Ok(format!("{hash:#x}"))
+    }
+
     async fn sign_poly1271_order<S: Signer>(
         &self,
         signer: &S,
