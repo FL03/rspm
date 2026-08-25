@@ -31,7 +31,7 @@ use crate::{Result, error::Error};
 type WsStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
 /// Broadcast channel capacity for incoming messages.
-const BROADCAST_CAPACITY: usize = 1024;
+const BROADCAST_CAPACITY: usize = 8192;
 
 static ACTIVE_CONNECTION_TASKS: AtomicUsize = AtomicUsize::new(0);
 static ACTIVE_HEARTBEAT_TASKS: AtomicUsize = AtomicUsize::new(0);
@@ -622,5 +622,38 @@ where
 
     pub(crate) fn begin_shutdown(&self) {
         self.runtime.begin_shutdown();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::sync::broadcast::error::TryRecvError;
+
+    #[test]
+    fn unread_burst_holds_8192_and_reports_the_8193rd_as_lagged() {
+        let (sender, mut receiver) = broadcast::channel::<usize>(BROADCAST_CAPACITY);
+        for value in 0..8_192 {
+            sender.send(value).expect("receiver remains subscribed");
+        }
+
+        for expected in 0..8_192 {
+            assert_eq!(
+                receiver.try_recv(),
+                Ok(expected),
+                "an unread burst of 8192 frames must not lag"
+            );
+        }
+        assert_eq!(receiver.try_recv(), Err(TryRecvError::Empty));
+
+        let (sender, mut receiver) = broadcast::channel::<usize>(BROADCAST_CAPACITY);
+        for value in 0..8_193 {
+            sender.send(value).expect("receiver remains subscribed");
+        }
+        assert_eq!(
+            receiver.try_recv(),
+            Err(TryRecvError::Lagged(1)),
+            "the 8193rd frame is the explicit one-frame lag boundary"
+        );
     }
 }
