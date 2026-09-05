@@ -1,6 +1,6 @@
 use crate::auth::{
-    AuthenticatedEndpoint, AuthenticatedEndpointError, authenticated_endpoint_is_safe, consts::*,
-    l2_headers,
+    AuthenticatedEndpoint, AuthenticatedEndpointError, RequestFailureClass,
+    authenticated_endpoint_is_safe, consts::*, l2_headers,
 };
 use crate::utils::unix_timestamp;
 use core::time::Duration;
@@ -114,16 +114,29 @@ impl AuthenticatedHttpClient {
         if let Some(headers) = headers {
             request = request.headers(headers);
         }
-        let mut response = request
-            .send()
-            .await
-            .map_err(|_| AuthenticatedEndpointError::request_failed(endpoint))?;
-        if !response.status().is_success()
-            || response
-                .content_length()
-                .is_some_and(|length| length > MAX_RESPONSE_BYTES as u64)
+        let mut response = request.send().await.map_err(|_| {
+            AuthenticatedEndpointError::request_failed_as(endpoint, RequestFailureClass::Transport)
+        })?;
+        // Split deliberately: a non-success status and an over-cap response are
+        // different failures with different remedies (rotate a credential vs.
+        // raise a byte cap), and folding them into one detail-free error is what
+        // made a live-blocking 4xx unreadable in production. Only the status
+        // integer is consulted; the body is never read on this path.
+        let status = response.status();
+        if !status.is_success() {
+            return Err(AuthenticatedEndpointError::request_failed_for_status(
+                endpoint,
+                status.as_u16(),
+            ));
+        }
+        if response
+            .content_length()
+            .is_some_and(|length| length > MAX_RESPONSE_BYTES as u64)
         {
-            return Err(AuthenticatedEndpointError::request_failed(endpoint));
+            return Err(AuthenticatedEndpointError::request_failed_as(
+                endpoint,
+                RequestFailureClass::OversizedResponse,
+            ));
         }
 
         let mut body = Vec::with_capacity(
@@ -132,13 +145,14 @@ impl AuthenticatedHttpClient {
                 .and_then(|length| usize::try_from(length).ok())
                 .unwrap_or_default(),
         );
-        while let Some(chunk) = response
-            .chunk()
-            .await
-            .map_err(|_| AuthenticatedEndpointError::request_failed(endpoint))?
-        {
+        while let Some(chunk) = response.chunk().await.map_err(|_| {
+            AuthenticatedEndpointError::request_failed_as(endpoint, RequestFailureClass::Transport)
+        })? {
             if body.len().saturating_add(chunk.len()) > MAX_RESPONSE_BYTES {
-                return Err(AuthenticatedEndpointError::request_failed(endpoint));
+                return Err(AuthenticatedEndpointError::request_failed_as(
+                    endpoint,
+                    RequestFailureClass::OversizedResponse,
+                ));
             }
             body.extend_from_slice(&chunk);
         }
