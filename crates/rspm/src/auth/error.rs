@@ -246,10 +246,7 @@ impl AuthenticatedEndpointError {
     ///
     /// Only the status integer is consulted; the response is never read.
     #[must_use]
-    pub const fn request_failed_for_status(
-        endpoint: AuthenticatedEndpoint,
-        status: u16,
-    ) -> Self {
+    pub const fn request_failed_for_status(endpoint: AuthenticatedEndpoint, status: u16) -> Self {
         Self::request_failed_as(endpoint, RequestFailureClass::from_status(status))
     }
 
@@ -258,7 +255,9 @@ impl AuthenticatedEndpointError {
     pub const fn endpoint_class(&self) -> &'static str {
         match &self.0 {
             AuthenticatedEndpointErrorKind::ResponseSchemaDecode { endpoint_class, .. }
-            | AuthenticatedEndpointErrorKind::RequestFailed { endpoint_class, .. } => endpoint_class,
+            | AuthenticatedEndpointErrorKind::RequestFailed { endpoint_class, .. } => {
+                endpoint_class
+            }
         }
     }
 
@@ -374,10 +373,7 @@ mod tests {
                 endpoint,
                 RequestFailureClass::OversizedResponse,
             ),
-            AuthenticatedEndpointError::request_failed_as(
-                endpoint,
-                RequestFailureClass::Transport,
-            ),
+            AuthenticatedEndpointError::request_failed_as(endpoint, RequestFailureClass::Transport),
         ]
         .iter()
         .map(alloc::string::ToString::to_string)
