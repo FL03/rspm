@@ -19,11 +19,11 @@ license = "Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/FL03/rspm.git"
 rust-version = "1.96.0"
-version = "0.0.0"
+version = "0.0.1"
 
 [workspace.dependencies]
 
-rspm = { default-features = false, path = "crates/rspm", version = "0.0.0" }
+rspm = { default-features = false, path = "crates/rspm", version = "0.0.1" }
 # local
 # benchmarks
 criterion = { features = ["plotters"], version = "0.8" }
