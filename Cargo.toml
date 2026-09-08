@@ -68,7 +68,7 @@ proc-macro2 = { version = "1" }
 smart-default = { version = "0.7" }
 static_assertions = { version = "1" }
 strum = { default-features = false, features = ["derive"], version = "0.28" }
-syn = { features = ["full", "parsing", "visit"], version = "2" }
+syn = { features = ["full", "parsing", "visit"], version = "3" }
 # serialization
 schemars = { default-features = false, features = ["derive"], version = "1" }
 serde = { default-features = false, features = ["derive"], version = "1" }
